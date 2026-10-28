@@ -1,0 +1,974 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#151a26">
+<title>역사 인생게임 — 조선 인생실록</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Jua&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;background:#151a26;overflow:hidden;touch-action:none;font-family:'Gowun Dodum','Apple SD Gothic Neo','Malgun Gothic',sans-serif;-webkit-user-select:none;user-select:none;color:#2b2218}
+#wrap{position:fixed;left:0;top:0;width:100%;height:100%;overflow:hidden}
+#stage{position:absolute;left:0;top:0;width:960px;height:540px;transform-origin:0 0;overflow:hidden;background:#1d2433;box-shadow:0 0 40px rgba(0,0,0,.5)}
+#cv{position:absolute;left:0;top:0;width:960px;height:540px}
+.hidden{display:none!important}
+h1,h2,h3,.jua{font-family:'Jua','Gowun Dodum',sans-serif;font-weight:400}
+/* HUD */
+#hud{position:absolute;left:0;top:0;right:0;height:28px;display:flex;align-items:center;gap:8px;padding:0 8px;background:rgba(18,22,34,.9);color:#fff;font-size:13.5px;z-index:5;white-space:nowrap}
+#hud .who{font-family:'Jua';font-size:15px;color:#ffe29a}
+#hud .obj{flex:1;text-align:center;color:#bfe3ff;overflow:hidden;text-overflow:ellipsis}
+#hud .chip{background:rgba(255,255,255,.12);border-radius:10px;padding:1px 7px}
+#hud .chip b{color:#ffd76a;font-weight:700}
+#hud button{background:#ffd76a;border:0;border-radius:6px;font-family:'Jua';font-size:14px;padding:1px 8px;cursor:pointer}
+/* dialog */
+#dlg{position:absolute;left:12px;right:12px;bottom:10px;min-height:132px;background:#fffaf0;border:4px solid #4a3a28;border-radius:14px;z-index:8;padding:16px 20px 14px 128px;box-shadow:0 6px 0 rgba(0,0,0,.25);cursor:pointer}
+#dlg.narr{padding-left:22px;background:#f3ead6}
+#dlg.narr #pcv,#dlg.narr .nm{display:none}
+#pcv{position:absolute;left:14px;top:16px;width:96px;height:96px;border-radius:12px;background:#e9dcc0;border:3px solid #c9b48a}
+#dlg .nm{position:absolute;top:-17px;left:120px;background:#4a3a28;color:#fff;font-family:'Jua';font-size:17px;padding:2px 14px;border-radius:8px}
+#dlg .tx{font-size:21px;line-height:1.55;min-height:62px;white-space:pre-wrap}
+#dlg .ch{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+#dlg .cbtn{text-align:left;font-family:inherit;font-size:18px;padding:7px 12px;border-radius:10px;border:2px solid #8b6b3f;background:#fff3d6;cursor:pointer;color:#2b2218}
+#dlg .cbtn:hover{background:#ffe2a3}
+#dlg .cbtn b{display:inline-block;width:22px;height:22px;border-radius:50%;background:#8b6b3f;color:#fff;text-align:center;font-size:14px;line-height:22px;margin-right:6px}
+#dlg .nx{position:absolute;right:16px;bottom:8px;font-size:14px;color:#8b6b3f;animation:bl 1s infinite}
+@keyframes bl{50%{opacity:.2}}
+/* panel */
+#panel{position:absolute;left:50%;top:52%;transform:translate(-50%,-50%);width:800px;max-height:500px;overflow:auto;background:#fbf6ea;border:4px solid #6b4f2a;border-radius:16px;padding:18px 22px;z-index:10;box-shadow:0 8px 0 rgba(0,0,0,.3);touch-action:pan-y}
+#panel.small{width:460px;text-align:center}
+#panel.title{width:520px;text-align:center;top:58%;background:rgba(251,246,234,.96)}
+#panel h2{font-size:28px;color:#6b3f1f;margin-bottom:8px}
+#panel p{font-size:18px;line-height:1.55;margin:6px 0}
+#panel .hl{color:#c0392b}
+.btn{font-family:'Jua';font-size:20px;padding:8px 22px;border-radius:12px;border:0;background:#d9613b;color:#fff;cursor:pointer;box-shadow:0 4px 0 #8f3a1f;margin:4px}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 #8f3a1f}
+.btn.sub{background:#5c7fa8;box-shadow:0 4px 0 #334e6e}
+.btn.gray{background:#9a8f7e;box-shadow:0 4px 0 #635a4c}
+.btn:disabled{opacity:.45;cursor:default}
+.row{display:flex;justify-content:center;flex-wrap:wrap;gap:6px;margin-top:12px}
+.opt{display:block;width:100%;text-align:left;font-family:inherit;font-size:19px;padding:10px 14px;margin:7px 0;border-radius:12px;border:2px solid #b89a6a;background:#fff;cursor:pointer;color:#2b2218}
+.opt:hover{background:#fff1d0}
+.opt.ok{background:#d7f2cf;border-color:#3d9a3d}
+.opt.bad{background:#f8d4d0;border-color:#c0392b}
+.opt.on{background:#ffe2a3;border-color:#d9613b}
+.fb{min-height:28px;color:#8f3a1f;font-weight:700}
+.score{font-family:'Jua';font-size:64px;color:#d9613b}
+.score small{font-size:24px}
+/* card */
+.card{background:linear-gradient(#fffdf6,#f3e6c6);border:3px solid #8b6b3f;border-radius:12px;padding:16px 20px;text-align:left;position:relative}
+.card .yr{font-family:'Jua';color:#8b6b3f;font-size:18px}
+.card h3{font-size:30px;color:#6b3f1f;margin:2px 0 8px}
+.card p{font-size:19px}
+.card .no{position:absolute;right:14px;top:10px;font-family:'Jua';color:#b89a6a}
+/* hangul */
+.hg{display:flex;gap:18px;align-items:center;justify-content:center;margin-top:10px}
+.hg .prev{width:130px;height:130px;border:4px solid #8b6b3f;border-radius:16px;background:#fff;font-size:92px;line-height:122px;text-align:center;font-family:'Jua'}
+.hg .rows div{margin:6px 0;display:flex;align-items:center;gap:5px}
+.hg .lab{width:46px;font-family:'Jua';color:#6b3f1f}
+.jm{width:46px;height:44px;font-size:24px;border-radius:10px;border:2px solid #b89a6a;background:#fff;cursor:pointer;font-family:'Jua'}
+.jm.on{background:#ffd76a;border-color:#d9613b}
+.jm.w{width:64px;font-size:17px}
+/* grid cards */
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px}
+.tile{border:3px solid #b89a6a;border-radius:12px;background:#fff;padding:10px;cursor:pointer;min-height:86px;font-size:16px;line-height:1.35}
+.tile b{display:block;font-family:'Jua';font-size:21px;color:#6b3f1f;margin-bottom:3px}
+.tile.on{background:#ffe2a3;border-color:#d9613b}
+.tile.ok{background:#d7f2cf;border-color:#3d9a3d}
+.tile.bad{background:#f8d4d0;border-color:#c0392b}
+.slots{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:8px 0}
+.slot{min-height:62px;border:3px dashed #b89a6a;border-radius:10px;padding:6px;font-size:16px;background:#fff8e8;cursor:pointer;position:relative}
+.slot i{position:absolute;left:6px;top:2px;font-style:normal;font-family:'Jua';color:#b89a6a;font-size:13px}
+.slot span{display:block;margin-top:12px;font-family:'Jua';font-size:16px}
+.slot.ok{border:3px solid #3d9a3d;background:#d7f2cf}.slot.bad{border:3px solid #c0392b;background:#f8d4d0}
+.pool{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.pool button{font-family:'Jua';font-size:17px;padding:8px 12px;border-radius:10px;border:2px solid #8b6b3f;background:#fff3d6;cursor:pointer}
+.stmt{font-size:22px;background:#fff;border:3px solid #b89a6a;border-radius:12px;padding:16px;margin:10px 0;min-height:80px}
+.bars div{display:flex;align-items:center;gap:8px;margin:4px 0;font-size:17px}
+.bars .bar{flex:1;height:14px;background:#eadfc8;border-radius:8px;overflow:hidden}
+.bars .bar i{display:block;height:100%;background:#d9613b;border-radius:8px}
+table.bk{width:100%;border-collapse:collapse;font-size:17px;margin:6px 0}
+table.bk td{padding:4px 8px;border-bottom:1px solid #e3d5b8}
+table.bk td:last-child{text-align:right;font-family:'Jua'}
+.mini{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;margin-top:6px}
+.mini span{font-size:13.5px;padding:3px 8px;border-radius:8px;background:#eadfc8;color:#9a8f7e}
+.mini span.got{background:#ffd76a;color:#5a3a12}
+input.nm{font-family:'Jua';font-size:24px;padding:6px 12px;border:3px solid #b89a6a;border-radius:10px;width:220px;text-align:center;-webkit-user-select:text;user-select:text}
+.sw{width:38px;height:38px;border-radius:50%;border:3px solid #fff;cursor:pointer;box-shadow:0 0 0 2px #b89a6a}
+.sw.on{box-shadow:0 0 0 4px #d9613b}
+.legend{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;font-size:15px;margin:8px 0}
+.legend i{display:inline-block;width:14px;height:14px;border-radius:4px;vertical-align:-2px;margin-right:4px}
+/* board bar */
+#bbar{position:absolute;left:0;right:0;bottom:8px;display:flex;justify-content:center;align-items:center;gap:14px;z-index:6}
+#bbar .tip{color:#fff;font-size:15px;background:rgba(0,0,0,.45);padding:4px 10px;border-radius:8px}
+#die{width:52px;height:52px;border-radius:12px;background:#fff;border:3px solid #4a3a28;font-family:'Jua';font-size:34px;line-height:46px;text-align:center}
+#toast{position:absolute;left:50%;top:40px;transform:translateX(-50%);background:rgba(30,30,30,.86);color:#ffe29a;font-family:'Jua';font-size:20px;padding:6px 18px;border-radius:20px;z-index:20;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap}
+#toast.on{opacity:1}
+#fade{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;transition:opacity .35s;z-index:30}
+#ctitle{position:absolute;left:0;right:0;top:200px;text-align:center;font-family:'Jua';color:#fff;font-size:44px;text-shadow:0 3px 0 #000;z-index:31;pointer-events:none;opacity:0;transition:opacity .4s}
+#ctitle small{display:block;font-size:24px;color:#ffe29a}
+/* pad */
+#pad{position:fixed;left:0;right:0;bottom:0;height:0;z-index:40;pointer-events:none}
+#pad .dp{position:fixed;left:14px;bottom:14px;width:156px;height:156px;pointer-events:auto}
+#pad .dp button{position:absolute;width:52px;height:52px;border-radius:12px;border:0;background:rgba(255,255,255,.55);font-size:22px;color:#333}
+#pad .u{left:52px;top:0}#pad .d{left:52px;bottom:0}#pad .l{left:0;top:52px}#pad .r{right:0;top:52px}
+#pad .a{position:fixed;right:18px;bottom:40px;width:78px;height:78px;border-radius:50%;border:0;background:rgba(255,215,106,.85);font-family:'Jua';font-size:28px;pointer-events:auto;color:#4a3a28}
+</style>
+</head>
+<body>
+<div id="wrap"><div id="stage">
+  <canvas id="cv" width="960" height="540"></canvas>
+  <div id="hud" class="hidden"></div>
+  <div id="bbar" class="hidden"><span class="tip">빨강·파랑·보라·금색 칸에서는 꼭 멈춰요</span><div id="die">?</div><button class="btn" id="roll">주사위 굴리기</button></div>
+  <div id="dlg" class="hidden"><canvas id="pcv" width="96" height="96"></canvas><div class="nm"></div><div class="tx"></div><div class="ch"></div><div class="nx">▼</div></div>
+  <div id="panel" class="hidden"></div>
+  <div id="toast"></div>
+  <div id="ctitle"></div>
+  <div id="fade"></div>
+</div></div>
+<div id="pad" class="hidden"><div class="dp"><button class="u" data-d="up">▲</button><button class="l" data-d="left">◀</button><button class="r" data-d="right">▶</button><button class="d" data-d="down">▼</button></div><button class="a" id="padA">A</button></div>
+<script>
+'use strict';
+/* ================= 기본 ================= */
+const $=s=>document.querySelector(s);
+const cv=$('#cv'),cx=cv.getContext('2d');
+const STAGE=$('#stage'),HUD=$('#hud'),DLG=$('#dlg'),DTX=DLG.querySelector('.tx'),DNM=DLG.querySelector('.nm'),DCH=DLG.querySelector('.ch'),PCV=$('#pcv'),PCX=PCV.getContext('2d');
+const PNL=$('#panel'),BBAR=$('#bbar'),FADE=$('#fade'),TOAST=$('#toast'),PAD=$('#pad'),CTITLE=$('#ctitle');
+const W=960,H=540,T=32,COLS=30,ROWS=16,OY=28,KEY='joseonLifeV1';
+const COARSE=window.matchMedia&&matchMedia('(pointer:coarse)').matches;
+let scene='title',fading=false,muted=false,AC=null,lastTS=0;
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]];}return a;};
+
+function fit(){
+  const WR=document.getElementById('wrap');const vw=WR.clientWidth||innerWidth,vh=WR.clientHeight||innerHeight,portrait=vh>vw;
+  const padH=(COARSE&&portrait)?190:0;
+  const s=Math.min(vw/W,(vh-padH)/H);
+  STAGE.style.transform=`scale(${s})`;
+  STAGE.style.left=((vw-W*s)/2)+'px';
+  STAGE.style.top=(portrait&&COARSE?Math.max(0,(vh-padH-H*s)/2):(vh-H*s)/2)+'px';
+}
+addEventListener('resize',fit);addEventListener('orientationchange',()=>setTimeout(fit,200));fit();setTimeout(fit,100);
+
+function snd(type){
+  if(muted)return;
+  try{
+    AC=AC||new (window.AudioContext||window.webkitAudioContext)();
+    const P={blip:[900,.03,'square',.02],ok:[620,.28,'triangle',.14],no:[200,.3,'sawtooth',.07],dice:[420,.06,'square',.04],card:[523,.45,'triangle',.14],step:[260,.04,'square',.02]}[type];
+    const o=AC.createOscillator(),g=AC.createGain(),t=AC.currentTime;
+    o.type=P[2];o.frequency.setValueAtTime(P[0],t);
+    if(type==='ok'||type==='card')o.frequency.linearRampToValueAtTime(P[0]*1.6,t+P[1]);
+    if(type==='no')o.frequency.linearRampToValueAtTime(P[0]*.6,t+P[1]);
+    g.gain.setValueAtTime(P[3],t);g.gain.exponentialRampToValueAtTime(.0001,t+P[1]);
+    o.connect(g);g.connect(AC.destination);o.start(t);o.stop(t+P[1]+.02);
+  }catch(e){}
+}
+let toastT=null;
+function toast(m){TOAST.textContent=m;TOAST.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>TOAST.classList.remove('on'),1600);}
+function fade(cb){fading=true;FADE.style.opacity=1;setTimeout(()=>{cb();FADE.style.opacity=0;setTimeout(()=>{fading=false;},360);},380);}
+function chapterTitle(a,b){CTITLE.innerHTML=`<small>${a}</small>${b}`;CTITLE.style.opacity=1;setTimeout(()=>CTITLE.style.opacity=0,1700);}
+
+/* ================= 상태 ================= */
+function newState(){return{v:1,name:'',gender:'boy',color:'#4f86c6',path:null,st:{용기:0,지혜:0,인정:0,곡식:3},pos:0,done:{},cards:[],miss:{},qc:0,qt:0,qs:0,asked:[],wrong:[],items:[],tl:0,fin:false};}
+let S=newState();
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+function loadSave(){try{const s=localStorage.getItem(KEY);return s?JSON.parse(s):null;}catch(e){return null;}}
+function clearSave(){try{localStorage.removeItem(KEY);}catch(e){}}
+function eff(e){
+  if(!e)return;const parts=[];
+  for(const k in e){if(!e[k])continue;S.st[k]=Math.max(0,(S.st[k]||0)+e[k]);parts.push(`${k} ${e[k]>0?'+':''}${e[k]}`);}
+  if(parts.length)toast(parts.join(' · '));hud();
+}
+const N=()=>S.name||'얘야';
+const total=()=>{const m=Object.values(S.miss).reduce((a,b)=>a+b,0);return m+S.qs+S.tl*10+(S.st.용기+S.st.지혜+S.st.인정)*5;};
+
+/* ================= 데이터: 실록 카드 ================= */
+const CARDS={
+ c1:{t:'훈민정음 창제',y:'1443년 · 1446년',d:'세종은 백성이 쉽게 글을 익히도록 훈민정음을 만들었다. 1443년에 만들고 1446년에 온 나라에 널리 알렸다.'},
+ c2:{t:'임진왜란의 시작',y:'1592년 4월',d:'일본군이 부산에 상륙했다. 부산진성의 정발, 동래성의 송상현이 끝까지 성을 지켰지만 성은 함락되었고, 일본군은 한양으로 올라갔다. 선조는 북쪽으로 피란했다.'},
+ c3:{t:'의병의 활약',y:'1592년',d:'나라가 위기에 빠지자 백성·선비·승려들이 스스로 의병을 일으켰다. 곽재우는 붉은 옷을 입고 고향 지리를 이용해 일본군을 물리쳐 ‘홍의장군’이라 불렸다.'},
+ c4:{t:'한산도대첩',y:'1592년 7월',d:'이순신이 이끈 조선 수군은 좁은 견내량의 일본 수군을 넓은 한산도 앞바다로 끌어낸 뒤 학익진으로 크게 무찔렀다. 판옥선과 거북선이 활약했다.'},
+ c5:{t:'행주대첩',y:'1593년 2월',d:'권율이 이끈 관군과 승병, 백성이 행주산성에서 힘을 모아 일본군을 크게 물리쳤다. 백성들이 돌을 날라 싸움을 도왔다고 전해진다.'},
+ c6:{t:'정유재란과 명량해전',y:'1597년',d:'일본이 다시 쳐들어온 정유재란 때, 이순신은 남은 배 13척으로 명량의 좁고 빠른 물살을 이용해 훨씬 많은 일본 수군을 물리쳤다.'},
+ c7:{t:'노량해전',y:'1598년',d:'물러가는 일본군과 노량 바다에서 마지막 큰 싸움이 벌어졌다. 이순신은 이 싸움에서 전사했고, 7년 동안의 전쟁이 끝났다.'},
+ c8:{t:'광해군의 중립 외교',y:'1608년~1623년',d:'광해군은 전쟁으로 무너진 나라를 다시 세우고, 명과 새로 일어난 후금 사이에서 어느 한쪽 편만 들지 않는 외교를 펼쳤다.'},
+ c9:{t:'『동의보감』 완성',y:'1610년',d:'허준은 아픈 백성을 위해 우리 땅에서 나는 약재와 치료법을 정리한 『동의보감』을 완성했다. 오늘날 유네스코 세계 기록 유산이다.'},
+ c10:{t:'정묘호란',y:'1627년',d:'인조반정(1623)으로 왕이 된 인조는 명과 가까이하고 후금을 멀리했다. 1627년 후금이 쳐들어왔고, 조선은 후금과 형제 관계를 맺고 전쟁을 끝냈다.'},
+ c11:{t:'병자호란',y:'1636년 12월',d:'후금은 나라 이름을 청으로 바꾸고 임금과 신하의 관계를 요구했다. 조선이 거절하자 청이 쳐들어왔고, 인조는 남한산성으로 피했다.'},
+ c12:{t:'삼전도의 항복',y:'1637년 1월',d:'성안의 식량이 떨어지자 인조는 삼전도에서 청에 항복했다. 소현세자와 봉림대군, 많은 백성이 청으로 끌려갔다.'}
+};
+const CARD_IDS=Object.keys(CARDS);
+/* 문제: a[0]이 정답 */
+const QB={
+ c1:[{q:'세종이 훈민정음을 만든 까닭은?',a:['백성이 쉽게 글을 읽고 쓰도록','다른 나라와 무역하려고','군사 신호로 쓰려고','양반만 쓰려고']},{q:'훈민정음은 무엇을 모아 글자를 만들까?',a:['자음과 모음','그림과 숫자','한자와 그림','점과 선']}],
+ c2:[{q:'임진왜란 때 일본군이 처음 상륙한 곳은?',a:['부산','강화도','의주','평양']},{q:'동래성을 끝까지 지킨 동래 부사는?',a:['송상현','권율','곽재우','김시민']}],
+ c3:[{q:'‘의병’에 대한 설명으로 알맞은 것은?',a:['백성 스스로 일어나 싸운 군대','나라에서 뽑은 직업 군인','다른 나라에서 온 군대','왕을 지키는 군대']},{q:'붉은 옷을 입어 ‘홍의장군’이라 불린 의병장은?',a:['곽재우','이순신','권율','정발']}],
+ c4:[{q:'한산도대첩에서 이순신이 펼친 진법은?',a:['학익진','일자진','장사진','어린진']},{q:'한산도대첩에서 조선 수군을 이끈 장수는?',a:['이순신','권율','송상현','최명길']}],
+ c5:[{q:'행주대첩을 이끈 장수는?',a:['권율','이순신','곽재우','허준']},{q:'행주대첩 승리의 힘으로 알맞은 것은?',a:['관군과 백성이 함께 힘을 모은 것','적의 배를 바다에서 막은 것','다른 나라 군대가 대신 싸운 것','성을 버리고 피한 것']}],
+ c6:[{q:'명량해전 때 이순신에게 남은 배는 몇 척이었을까?',a:['13척','50척','100척','3척']},{q:'정유재란은 어떤 사건일까?',a:['1597년 일본이 다시 쳐들어온 전쟁','청이 쳐들어온 전쟁','후금과 맺은 약속','조선이 일본을 공격한 전쟁']}],
+ c7:[{q:'이순신이 마지막으로 싸운 해전은?',a:['노량해전','한산도대첩','명량해전','옥포해전']},{q:'임진왜란과 정유재란은 모두 몇 년 동안 이어졌을까?',a:['약 7년','약 1년','약 30년','약 100년']}],
+ c8:[{q:'광해군이 명과 후금 사이에서 펼친 외교는?',a:['중립 외교','쇄국 외교','친명 외교','친일 외교']}],
+ c9:[{q:'『동의보감』을 쓴 사람은?',a:['허준','세종','정약용','장영실']},{q:'『동의보감』의 특징으로 알맞은 것은?',a:['우리 땅 약재를 중심으로 정리했다','먼 나라 약재만 실었다','왕실 사람만 볼 수 있었다','전쟁 무기 만드는 법을 담았다']}],
+ c10:[{q:'1627년 조선에 쳐들어온 나라는?',a:['후금','일본','명','원']}],
+ c11:[{q:'병자호란 때 인조가 피한 곳은?',a:['남한산성','행주산성','동래성','한산도']}],
+ c12:[{q:'인조가 청에 항복한 곳은?',a:['삼전도','명량','노량','견내량']},{q:'청과 화친하자고 주장한 신하는?',a:['최명길','김상헌','송상현','권율']}]
+};
+
+/* ================= 데이터: 인생 보드 ================= */
+const SP=[
+ {k:'start',y:1580,a:0,l:'출생'},
+ {k:'d',y:1582,a:2,l:'첫걸음',t:'아장아장 첫걸음을 떼었다. 온 식구가 손뼉을 치며 기뻐한다.',e:{인정:1}},
+ {k:'d',y:1585,a:5,l:'옛이야기',t:'할머니 무릎에 앉아 옛이야기를 듣는 시간이 가장 좋다.',e:{지혜:1}},
+ {k:'m',y:1588,a:8,l:'할머니',ch:'P'},
+ {k:'d',y:1589,a:9,l:'장터 심부름',t:'장터 심부름을 하며 엽전 셈하는 법을 익혔다.',e:{지혜:1,곡식:1}},
+ {k:'c',y:1590,a:10,l:'흉년',t:'흉년이 들어 옆집 아이가 며칠째 굶고 있다. 어떻게 할까?',c:[{t:'우리 곡식 1을 나누어 준다',e:{곡식:-1,인정:2}},{t:'우리 식구 먹을 것도 모자라다',e:{}}]},
+ {k:'d',y:1591,a:11,l:'소문',t:'일본에 다녀온 사신들 이야기가 장터에 떠돈다. "정말 전쟁이 날까?"'},
+ {k:'s',y:1592,a:12,l:'임진왜란',t:['1592년 4월 13일, 수많은 일본 배가 부산 앞바다에 나타났다!','임진왜란이 시작되었다. 사람들이 동래성으로 모여든다.']},
+ {k:'m',y:1592,a:12,l:'송상현',ch:'c1'},
+ {k:'c',y:1592,a:12,l:'피란길',t:'피란길 산속에서 부모를 잃고 우는 아이를 만났다.',c:[{t:'함께 데리고 간다 (곡식 -1)',e:{인정:2,곡식:-1}},{t:'근처 절에 맡기고 길을 서두른다',e:{지혜:1}}]},
+ {k:'m',y:1592,a:12,l:'곽재우',ch:'c2'},
+ {k:'m',y:1592,a:12,l:'이순신',ch:'c3'},
+ {k:'q',y:1592,a:12,l:'실록 퀴즈'},
+ {k:'m',y:1593,a:13,l:'권율',ch:'c4'},
+ {k:'d',y:1594,a:14,l:'굶주림',t:'전쟁 중에 흉년까지 겹쳤다. 들풀을 캐 먹으며 버틴다.',e:{곡식:-1,용기:1},herb:true},
+ {k:'c',y:1596,a:16,l:'성벽 고치기',t:'명과 일본이 전쟁을 멈추는 이야기를 나눈다는 소식이다. 마을 성벽 고치는 일에 나설까?',c:[{t:'성벽 고치는 일을 돕는다',e:{용기:1,인정:1}},{t:'농사에 힘써 곡식을 모은다',e:{곡식:2}}]},
+ {k:'s',y:1597,a:17,l:'정유재란',t:['1597년, 일본이 다시 쳐들어왔다. 정유재란이다!','이순신 장군이 남은 배 13척으로 명량 바다에서 적을 물리쳤다는 소식이 들려왔다!'],card:'c6'},
+ {k:'s',y:1598,a:18,l:'노량해전',t:['1598년, 물러가는 일본군과 노량 바다에서 마지막 큰 싸움이 벌어졌다.','이순신 장군은 이 싸움에서 세상을 떠났다. 7년 동안의 전쟁이 끝났다.'],card:'c7'},
+ {k:'d',y:1600,a:20,l:'귀향',t:'고향 동래로 돌아와 무너진 집을 다시 지었다.',e:{곡식:1}},
+ {k:'d',y:1603,a:23,l:'혼례',t:'이웃 마을 사람과 혼례를 올렸다. 마을이 모처럼 웃음으로 가득하다.',e:{인정:1}},
+ {k:'c',y:1605,a:25,l:'한글 가르치기',t:'이웃 아이들이 글을 배우고 싶어 한다.',c:[{t:'할머니께 배운 한글을 가르쳐 준다',e:{지혜:1,인정:1}},{t:'일이 바빠 다음에 가르친다',e:{곡식:1}}]},
+ {k:'d',y:1607,a:27,l:'첫아이',t:'첫아이가 태어났다! 아이에게 할머니 이야기를 들려줄 날이 기다려진다.',e:{인정:1}},
+ {k:'s',y:1608,a:28,l:'광해군',t:['1608년, 광해군이 왕이 되었다.','광해군은 무너진 나라를 다시 세우고, 명과 후금 사이에서 한쪽 편만 들지 않는 외교를 펼쳤다.'],card:'c8'},
+ {k:'m',y:1610,a:30,l:'허준',ch:'c5'},
+ {k:'q',y:1612,a:32,l:'실록 퀴즈'},
+ {k:'d',y:1615,a:35,l:'보부상',t:'보부상이 되어 여러 고을을 다니며 세상 소식을 듣는다.',e:{지혜:1,곡식:1}},
+ {k:'c',y:1620,a:40,l:'후금 소문',t:'북쪽에서 후금이 강해지고 있다는 소문이 돈다.',c:[{t:'마을 젊은이들과 무예를 익힌다',e:{용기:1}},{t:'만일을 위해 곡식을 모아 둔다',e:{곡식:2}}]},
+ {k:'s',y:1623,a:43,l:'인조반정',t:['1623년, 광해군이 왕의 자리에서 쫓겨나고 인조가 왕이 되었다. 이를 인조반정이라 한다.','새 조정은 명과 가까이 지내고 후금을 멀리했다.']},
+ {k:'s',y:1627,a:47,l:'정묘호란',t:['1627년, 후금이 쳐들어왔다! 정묘호란이다.','조선은 후금과 형제 관계를 맺기로 하고 전쟁을 끝냈다.'],card:'c10'},
+ {k:'d',y:1630,a:50,l:'자식 혼인',t:'아이가 자라 혼인을 했다. 세월이 참 빠르다.',e:{인정:1}},
+ {k:'c',y:1633,a:53,l:'마을 창고',t:'마을 사람들이 어려운 때를 대비해 곡식을 함께 모으자고 한다.',c:[{t:'곡식 1을 낸다',e:{곡식:-1,인정:2}},{t:'우리 집 곡식은 따로 둔다',e:{}}]},
+ {k:'d',y:1635,a:55,l:'손주',t:'손주가 태어났다! 오랜만에 『인생실록』을 꺼내 본다.',e:{지혜:1}},
+ {k:'s',y:1636,a:56,l:'병자호란',t:['1636년, 후금은 나라 이름을 청으로 바꾸고 조선에 임금과 신하의 관계를 요구했다.','조선이 거절하자 그해 12월 청이 쳐들어왔다. 병자호란이다! 인조는 남한산성으로 피했다.'],card:'c11'},
+ {k:'m',y:1637,a:57,l:'남한산성',ch:'c6'},
+ {k:'q',y:1637,a:57,l:'실록 퀴즈'},
+ {k:'e',y:1637,a:57,l:'인생 결산',ch:'E'}
+];
+const STOP={m:1,s:1,q:1,e:1};
+const SPC={start:'#f2c14e',d:'#8bc98b',c:'#f2d16b',m:'#7fb2ea',s:'#ea8a80',q:'#b79be6',e:'#f2c14e'};
+const SPN={d:'일상',c:'갈림길',m:'만남',s:'소용돌이',q:'실록',start:'출발',e:'결산'};
+
+/* ================= 캐릭터 ================= */
+const CH={
+ grandma:{n:'할머니',o:{body:'#9aa0a6',hat:'whitebun'}},
+ mom:{n:'어머니',o:{body:'#d98aa0',hat:'bun'}},
+ kid:{n:'마을 아이',o:{body:'#e9b949',hat:'braid'}},
+ merchant:{n:'장터 아저씨',o:{body:'#8d6e4f',hat:'gat',beard:'#222'}},
+ song:{n:'송상현',o:{body:'#8e2b3a',hat:'samo',beard:'#222'}},
+ soldier:{n:'병사',o:{body:'#3c5a8a',hat:'jeonrip'}},
+ villager:{n:'마을 사람',o:{body:'#a7845c',hat:'topknot'}},
+ kwak:{n:'곽재우',o:{body:'#d23a2e',hat:'headband',beard:'#222'}},
+ uibyeong:{n:'의병',o:{body:'#7b8a5a',hat:'headband'}},
+ woman:{n:'아낙',o:{body:'#c98bb9',hat:'kerchief'}},
+ yi:{n:'이순신',o:{body:'#2f4f7f',hat:'helmet',helm:'#4a4a52',plume:'#d33',beard:'#222'}},
+ rower:{n:'격군',o:{body:'#6b7b8c',hat:'headband'}},
+ fisher:{n:'어부',o:{body:'#7f9aa8',hat:'kerchief'}},
+ gwon:{n:'권율',o:{body:'#6a4630',hat:'helmet',helm:'#6b5a3a',plume:'#2a6',beard:'#eee'}},
+ monk:{n:'승병',o:{body:'#8a7f72',hat:'monk'}},
+ heo:{n:'허준',o:{body:'#3f7d5a',hat:'samo',beard:'#222'}},
+ sick:{n:'아픈 백성',o:{body:'#b5a68f',hat:'topknot'}},
+ official:{n:'내의원 관리',o:{body:'#4f6fa8',hat:'samo'}},
+ seller:{n:'약재 상인',o:{body:'#8d6e4f',hat:'gat'}},
+ seller2:{n:'먼 나라 약재 상인',o:{body:'#5a6f8d',hat:'gat',beard:'#222'}},
+ choi:{n:'최명길',o:{body:'#3d5c9c',hat:'samo',beard:'#222'}},
+ kim:{n:'김상헌',o:{body:'#7a3550',hat:'samo',beard:'#eee'}},
+ injo:{n:'인조',o:{body:'#c0392b',hat:'crown',beard:'#222'}},
+ old:{n:'이웃 노인',o:{body:'#d8d2c4',hat:'gat',beard:'#eee'}},
+ grandkid:{n:'손주',o:{body:'#f0a04b',hat:'braid'}}
+};
+function curAge(){return SP[S.pos]?SP[S.pos].a:8;}
+function pchar(age){
+  if(age==null)age=curAge();
+  const boy=S.gender==='boy';
+  const hat=age<15?'braid':boy?(age>=50?'gat':'topknot'):(age>=50?'whitebun':'bun');
+  return{body:S.color,hat,beard:boy&&age>=20?(age>=50?'#eee':'#222'):null};
+}
+function drawChar(c,x,y,o,dir,step,s){
+  s=s||1;dir=dir||'down';c.save();c.translate(x,y);c.scale(s,s);
+  const bob=step%2?-1:0,skin=o.skin||'#f6cfa8';
+  c.fillStyle='rgba(0,0,0,.18)';c.beginPath();c.ellipse(16,30,10,3.5,0,0,7);c.fill();
+  c.fillStyle='#3b3b3b';
+  if(step%2){c.fillRect(11,25,4,5);c.fillRect(17,25,4,4);}else{c.fillRect(11,25,4,4);c.fillRect(17,25,4,5);}
+  c.fillStyle=o.body;c.beginPath();c.moveTo(9,15+bob);c.lineTo(23,15+bob);c.lineTo(26,27+bob);c.lineTo(6,27+bob);c.closePath();c.fill();
+  c.fillStyle='rgba(255,255,255,.6)';if(dir!=='up'){c.beginPath();c.moveTo(13,15+bob);c.lineTo(16,19+bob);c.lineTo(19,15+bob);c.fill();}
+  c.fillStyle='rgba(0,0,0,.25)';c.fillRect(8,21+bob,16,2);
+  c.fillStyle=o.body;c.fillRect(5,16+bob,4,8);c.fillRect(23,16+bob,4,8);
+  c.fillStyle=skin;c.fillRect(5,23+bob,4,2);c.fillRect(23,23+bob,4,2);
+  const hy=9+bob;
+  c.fillStyle=skin;c.beginPath();c.arc(16,hy,8,0,7);c.fill();
+  const hair=o.hat==='whitebun'?'#e6e6e6':'#1f1a17';
+  const cap=col=>{c.fillStyle=col;c.beginPath();c.arc(16,hy,8.3,Math.PI*1.02,Math.PI*1.98);c.fill();c.fillRect(7.8,hy-3,16.4,2);};
+  if(o.hat!=='monk'){cap(hair);if(dir==='up'){c.fillStyle=hair;c.beginPath();c.arc(16,hy,8.3,0,7);c.fill();}}
+  if(dir!=='up'){
+    c.fillStyle='#222';
+    if(dir==='down'){c.fillRect(12,hy,2,2.4);c.fillRect(18,hy,2,2.4);c.fillStyle='rgba(240,120,120,.45)';c.fillRect(10,hy+3,3,1.5);c.fillRect(19,hy+3,3,1.5);}
+    else if(dir==='left')c.fillRect(11,hy,2,2.4);else c.fillRect(19,hy,2,2.4);
+    if(o.beard){c.fillStyle=o.beard;c.beginPath();const bx=dir==='left'?13:dir==='right'?19:16;c.moveTo(bx-3,hy+5);c.lineTo(bx+3,hy+5);c.lineTo(bx,hy+11);c.fill();}
+  }
+  const H=o.hat;
+  if(H==='braid'){c.fillStyle=hair;if(dir==='up'){c.fillRect(14.5,hy+3,3,11);c.fillStyle='#d33';c.fillRect(14,hy+13,4,3);}else if(dir!=='down'){const bx=dir==='left'?22:7;c.fillRect(bx,hy+1,3,9);c.fillStyle='#d33';c.fillRect(bx-.5,hy+9,4,3);}}
+  else if(H==='topknot'){c.fillStyle=hair;c.beginPath();c.arc(16,hy-9,3,0,7);c.fill();c.fillStyle='#333';c.fillRect(8,hy-4,16,1.5);}
+  else if(H==='bun'||H==='whitebun'){c.fillStyle=hair;c.beginPath();if(dir==='up')c.arc(16,hy+3,4,0,7);else if(dir==='left')c.arc(23,hy+1,3.5,0,7);else if(dir==='right')c.arc(9,hy+1,3.5,0,7);else c.arc(16,hy-8.5,3,0,7);c.fill();c.fillStyle='#c9a227';c.fillRect(dir==='left'?21:dir==='right'?5:11,hy-(dir==='down'?9:-1),dir==='down'?10:7,1.4);}
+  else if(H==='gat'){c.fillStyle='rgba(20,20,20,.85)';c.beginPath();c.ellipse(16,hy-5,13,3,0,0,7);c.fill();c.fillStyle='#111';c.fillRect(11,hy-14,10,9);c.fillStyle='rgba(255,255,255,.2)';c.fillRect(11,hy-8,10,1.5);}
+  else if(H==='samo'){c.fillStyle='#111';c.beginPath();c.arc(16,hy-5,7.5,Math.PI,0);c.fill();c.fillRect(8.5,hy-6,15,3);
+    if(dir==='down'||dir==='up'){c.beginPath();c.ellipse(5,hy-6,5,2.4,0,0,7);c.ellipse(27,hy-6,5,2.4,0,0,7);c.fill();}else{c.beginPath();c.ellipse(dir==='left'?24:8,hy-7,5,2.4,0,0,7);c.fill();}}
+  else if(H==='helmet'){c.fillStyle=o.helm||'#555';c.beginPath();c.arc(16,hy-3,9,Math.PI,0);c.fill();c.fillRect(6,hy-4,20,3);c.fillStyle='#c9a227';c.fillRect(15,hy-12,2,4);c.fillStyle=o.plume||'#d33';c.beginPath();c.arc(16,hy-14,3,0,7);c.fill();c.fillStyle='rgba(255,255,255,.25)';c.fillRect(9,hy-8,4,2);}
+  else if(H==='jeonrip'){c.fillStyle='#1a1a1a';c.beginPath();c.ellipse(16,hy-4,11.5,2.6,0,0,7);c.fill();c.beginPath();c.arc(16,hy-5,6.5,Math.PI,0);c.fill();c.fillStyle='#d33';c.fillRect(15,hy-14,2,3);}
+  else if(H==='headband'){c.fillStyle=o.body==='#d23a2e'?'#fff':'#d33';c.fillRect(8,hy-4,16,2.5);if(dir!=='down'){c.fillRect(dir==='left'?22:6,hy-3,4,6);}}
+  else if(H==='kerchief'){c.fillStyle='#f4f0e6';c.beginPath();c.arc(16,hy-1,9,Math.PI*1.05,Math.PI*1.95);c.fill();c.fillRect(7,hy-3,18,2.5);}
+  else if(H==='crown'){c.fillStyle='#111';c.beginPath();c.arc(16,hy-5,7.5,Math.PI,0);c.fill();c.fillRect(8.5,hy-6,15,3);c.beginPath();c.ellipse(11,hy-13,2.4,4,0,0,7);c.ellipse(21,hy-13,2.4,4,0,0,7);c.fill();c.fillStyle='#c9a227';c.fillRect(9,hy-4,14,1.2);}
+  else if(H==='monk'){c.fillStyle='rgba(0,0,0,.08)';c.beginPath();c.arc(16,hy-1,8,Math.PI,0);c.fill();}
+  c.restore();
+}
+
+/* ================= 지도 ================= */
+const PAL={
+ spring:{g1:'#9ad46e',g2:'#90cc64',g3:'#7fbb55',road:'#d9c393',t1:'#4e9a45',t2:'#77c35f',fl:'#ff9ec2',water:'#4ea3d9',sand:'#ead9a6'},
+ summer:{g1:'#79c457',g2:'#70bb4f',g3:'#5ea842',road:'#d6bf8c',t1:'#2f7d3a',t2:'#4ea84a',fl:'#fff27a',water:'#3d8fd1',sand:'#eedcaa'},
+ autumn:{g1:'#cdbf6c',g2:'#c3b562',g3:'#ad9f52',road:'#d8bf8e',t1:'#d9782b',t2:'#efa33c',fl:'#e8573c',water:'#4a8fc0',sand:'#e8d5a0'},
+ late:{g1:'#bdb381',g2:'#b2a878',g3:'#9d9468',road:'#cdb68a',t1:'#6f6a43',t2:'#8f8a5a',fl:'#e9e3d0',water:'#5c8fb0',sand:'#ddd0a8'},
+ winter:{g1:'#eef3f8',g2:'#e6edf4',g3:'#d3dde8',road:'#d9d2c6',t1:'#2e5d4a',t2:'#3f7560',fl:'#ffffff',water:'#7aa5c4',sand:'#e7e2d6'}
+};
+const BLOCK={T:1,'~':1,W:1,R:1,Y:1};
+const grid=f=>Array.from({length:ROWS},()=>Array(COLS).fill(f));
+function Rc(g,x,y,w,h,ch){for(let j=y;j<y+h;j++)for(let i=x;i<x+w;i++)if(j>=0&&j<ROWS&&i>=0&&i<COLS)g[j][i]=ch;}
+function border(g,ch){Rc(g,0,0,COLS,1,ch);Rc(g,0,ROWS-1,COLS,1,ch);Rc(g,0,0,1,ROWS,ch);Rc(g,COLS-1,0,1,ROWS,ch);}
+function h2(x,y){let n=(x*374761393+y*668265263)|0;n=Math.imul(n^(n>>>13),1274126177);return((n^(n>>>16))>>>0)/4294967296;}
+function flowers(g,n,seed){for(let k=0;k<n;k++){const x=1+((h2(k*7+seed,k*3)*28)|0),y=1+((h2(k*5,seed+k*11)*14)|0);if(g[y][x]==='.')g[y][x]='F';}}
+function fortress(g,x0,y0,x1,y1,gx){Rc(g,x0,y0,x1-x0+1,1,'W');Rc(g,x0,y1,x1-x0+1,1,'W');Rc(g,x0,y0,1,y1-y0+1,'W');Rc(g,x1,y0,1,y1-y0+1,'W');Rc(g,gx,y1,2,1,'G');}
+
+const MAPS={
+ village(season){const g=grid('.');border(g,'T');Rc(g,26,1,3,3,'T');Rc(g,1,12,3,3,'T');Rc(g,1,8,28,1,'=');Rc(g,14,1,2,14,'=');Rc(g,24,4,2,2,'~');flowers(g,26,3);
+  return{g,season,bld:[{t:'choga',x:3,y:3,w:4,h:3},{t:'choga',x:8,y:3,w:4,h:3},{t:'choga',x:18,y:3,w:4,h:3},{t:'choga',x:21,y:10,w:4,h:3},{t:'choga',x:5,y:10,w:4,h:3}]};},
+ dongnae(){const g=grid('.');border(g,'T');fortress(g,2,2,27,12,14);Rc(g,1,13,28,1,'=');Rc(g,14,7,2,5,'=');Rc(g,3,7,24,1,'=');flowers(g,14,9);
+  return{g,season:'spring',bld:[{t:'giwa',x:11,y:3,w:8,h:3},{t:'choga',x:4,y:3,w:4,h:3},{t:'choga',x:21,y:3,w:4,h:3},{t:'choga',x:4,y:9,w:4,h:3},{t:'choga',x:21,y:9,w:4,h:3}]};},
+ uiryeong(){const g=grid('.');border(g,'T');Rc(g,1,11,28,2,'~');Rc(g,3,10,8,1,'P');Rc(g,18,13,7,1,'P');Rc(g,24,1,5,3,'T');Rc(g,1,1,3,4,'T');Rc(g,1,8,28,1,'=');flowers(g,16,5);
+  return{g,season:'summer',bld:[{t:'tent',x:6,y:3,w:3,h:2},{t:'tent',x:11,y:3,w:3,h:2},{t:'tent',x:18,y:3,w:3,h:2}]};},
+ hansan(){const g=grid('~');Rc(g,0,0,11,16,'.');Rc(g,11,0,2,16,'S');Rc(g,0,0,11,1,'T');Rc(g,0,15,11,1,'T');Rc(g,0,0,1,16,'T');Rc(g,13,7,6,2,'D');flowers(g,10,8);
+  return{g,season:'summer',bld:[{t:'giwa',x:2,y:2,w:5,h:3},{t:'ship',x:19,y:2,w:6,h:3},{t:'ship',x:19,y:11,w:6,h:3},{t:'turtle',x:21,y:6,w:5,h:3}]};},
+ haengju(){const g=grid('.');border(g,'T');fortress(g,3,2,26,12,14);Rc(g,6,4,2,1,'R');Rc(g,22,4,2,1,'R');Rc(g,10,4,1,1,'R');Rc(g,19,10,2,1,'R');Rc(g,14,13,2,2,'=');
+  return{g,season:'late',bld:[{t:'tent',x:13,y:3,w:4,h:2},{t:'choga',x:6,y:7,w:3,h:2}]};},
+ hanyang(){const g=grid('.');border(g,'T');Rc(g,1,7,28,1,'=');Rc(g,1,11,28,1,'=');Rc(g,14,6,2,9,'=');flowers(g,10,4);
+  return{g,season:'autumn',bld:[{t:'giwa',x:10,y:2,w:10,h:4},{t:'stall',x:3,y:9,w:3,h:2},{t:'stall',x:7,y:9,w:3,h:2},{t:'stall',x:18,y:9,w:3,h:2},{t:'stall',x:22,y:9,w:3,h:2},{t:'giwa',x:3,y:12,w:5,h:3},{t:'giwa',x:22,y:12,w:5,h:3}]};},
+ namhan(){const g=grid('.');border(g,'T');fortress(g,2,1,27,13,14);Rc(g,4,3,2,2,'T');Rc(g,24,3,2,2,'T');Rc(g,14,6,2,7,'=');
+  return{g,season:'winter',bld:[{t:'palace',x:10,y:2,w:10,h:4},{t:'tent',x:4,y:9,w:3,h:2},{t:'tent',x:23,y:9,w:3,h:2}]};}
+};
+
+function drawTile(g,ch,px,py,p,x,y){
+  const r=h2(x,y);
+  const grass=()=>{g.fillStyle=r<.5?p.g1:p.g2;g.fillRect(px,py,T,T);g.fillStyle=p.g3;for(let i=0;i<3;i++){g.fillRect(px+((h2(x*3+i,y*7)*28)|0),py+((h2(y*5+i,x*11)*28)|0),2,2);}};
+  switch(ch){
+   case '.':grass();break;
+   case 'F':grass();for(let i=0;i<3;i++){const a=px+5+((h2(x+i,y*3)*22)|0),b=py+5+((h2(y+i,x*5)*22)|0);g.fillStyle=p.fl;g.fillRect(a,b,3,3);g.fillStyle='#fff6a0';g.fillRect(a+1,b+1,1,1);}break;
+   case 'T':grass();g.fillStyle='#6b4a2a';g.fillRect(px+13,py+18,6,12);
+     if(p===PAL.late){g.strokeStyle='#5a4630';g.lineWidth=2;g.beginPath();g.moveTo(px+16,py+20);g.lineTo(px+8,py+8);g.moveTo(px+16,py+18);g.lineTo(px+24,py+7);g.moveTo(px+16,py+16);g.lineTo(px+16,py+4);g.stroke();g.fillStyle=p.t2;g.beginPath();g.arc(px+16,py+10,6,0,7);g.fill();}
+     else{g.fillStyle=p.t1;g.beginPath();g.arc(px+16,py+13,12,0,7);g.fill();g.fillStyle=p.t2;g.beginPath();g.arc(px+12,py+9,5.5,0,7);g.fill();if(p===PAL.winter){g.fillStyle='#fff';g.beginPath();g.arc(px+16,py+6,8,Math.PI,0);g.fill();}}break;
+   case '=':g.fillStyle=p.road;g.fillRect(px,py,T,T);g.fillStyle='rgba(0,0,0,.07)';g.fillRect(px+((r*24)|0),py+((h2(y,x)*24)|0),4,3);break;
+   case 'S':g.fillStyle=p.sand;g.fillRect(px,py,T,T);g.fillStyle='rgba(0,0,0,.06)';g.fillRect(px+((r*26)|0),py+((h2(y,x)*26)|0),3,2);break;
+   case '~':g.fillStyle=p.water;g.fillRect(px,py,T,T);break;
+   case 'D':g.fillStyle='#b98b55';g.fillRect(px,py,T,T);g.fillStyle='#8f6a3d';for(let i=0;i<4;i++)g.fillRect(px,py+i*8+7,T,1);break;
+   case 'P':grass();g.strokeStyle='#c9b36b';g.lineWidth=2;for(let i=0;i<5;i++){const a=px+3+i*6;g.beginPath();g.moveTo(a,py+30);g.lineTo(a+2,py+8+((h2(x+i,y)*6)|0));g.stroke();}break;
+   case 'W':g.fillStyle='#8d8f94';g.fillRect(px,py,T,T);g.fillStyle='#a6a9ae';for(let j=0;j<4;j++)for(let i=0;i<2;i++)g.fillRect(px+i*16+(j%2?8:0)-((j%2&&i)?0:0),py+j*8+1,14,6);g.fillStyle='#6f7175';g.fillRect(px,py,T,3);break;
+   case 'G':g.fillStyle=p.road;g.fillRect(px,py,T,T);g.fillStyle='#5b4632';g.fillRect(px,py,4,T);g.fillRect(px+28,py,4,T);break;
+   case 'R':grass();g.fillStyle='#8a8a86';g.beginPath();g.ellipse(px+16,py+20,13,9,0,0,7);g.fill();g.fillStyle='#a9a9a4';g.beginPath();g.ellipse(px+12,py+16,6,4,0,0,7);g.fill();break;
+  }
+}
+function roofCurve(g,x,y,w,h,col){g.fillStyle=col;g.beginPath();g.moveTo(x-6,y+h);g.quadraticCurveTo(x+w*.12,y+h*.7,x+w*.18,y);g.lineTo(x+w*.82,y);g.quadraticCurveTo(x+w*.88,y+h*.7,x+w+6,y+h);g.quadraticCurveTo(x+w/2,y+h*.72,x-6,y+h);g.fill();}
+function drawBld(g,b){
+  const x=b.x*T,y=b.y*T,w=b.w*T,h=b.h*T;
+  g.fillStyle='rgba(0,0,0,.15)';g.fillRect(x+4,y+h-6,w-8,6);
+  if(b.t==='giwa'||b.t==='palace'){
+    const pil=b.t==='palace'?'#b23a2a':'#7a4a2a';
+    g.fillStyle='#bfb3a0';g.fillRect(x+2,y+h-8,w-4,8);
+    g.fillStyle='#efe6d2';g.fillRect(x+8,y+h*.42,w-16,h*.58-8);
+    g.fillStyle=pil;const n=Math.max(3,b.w);for(let i=0;i<=n;i++){g.fillRect(x+8+i*(w-20)/n,y+h*.42,4,h*.58-8);}
+    g.fillStyle='#c9a66b';for(let i=0;i<n;i++){const wx=x+14+i*(w-20)/n,ww=(w-20)/n-10;g.fillRect(wx,y+h*.52,ww,h*.22);g.fillStyle='#a88350';for(let k=1;k<3;k++)g.fillRect(wx+ww*k/3,y+h*.52,1,h*.22);g.fillStyle='#c9a66b';}
+    roofCurve(g,x,y+4,w,h*.44,'#454b57');
+    g.strokeStyle='rgba(255,255,255,.14)';g.lineWidth=1;for(let i=x+w*.2;i<x+w*.8;i+=6){g.beginPath();g.moveTo(i,y+8);g.lineTo(i-(i-x-w/2)*.12,y+h*.4);g.stroke();}
+    g.fillStyle='#2c3038';g.fillRect(x+w*.17,y+2,w*.66,6);
+  }else if(b.t==='choga'){
+    g.fillStyle='#d9c39a';g.fillRect(x+6,y+h*.45,w-12,h*.55-4);
+    g.fillStyle='#7a5a3a';g.fillRect(x+w/2-7,y+h*.6,14,h*.4-4);
+    g.fillStyle='#b08b5a';g.fillRect(x+12,y+h*.55,12,10);g.fillRect(x+w-24,y+h*.55,12,10);
+    g.fillStyle='#c9a35a';g.beginPath();g.ellipse(x+w/2,y+h*.45,w/2+4,h*.42,0,Math.PI,0);g.fill();g.fillRect(x-4,y+h*.42,w+8,6);
+    g.strokeStyle='#a9853f';g.lineWidth=1.5;for(let i=1;i<6;i++){g.beginPath();g.ellipse(x+w/2,y+h*.45,(w/2+4)*i/6,h*.42*i/6,0,Math.PI,0);g.stroke();}
+  }else if(b.t==='tent'){
+    g.fillStyle='#efe4c8';g.beginPath();g.moveTo(x+2,y+h-4);g.lineTo(x+w/2,y+4);g.lineTo(x+w-2,y+h-4);g.fill();
+    g.fillStyle='#c94a3a';g.beginPath();g.moveTo(x+w/2,y+4);g.lineTo(x+w/2-10,y+h-4);g.lineTo(x+w/2+10,y+h-4);g.fill();
+    g.fillStyle='#6b4a2a';g.fillRect(x+w/2-1,y-12,2,18);g.fillStyle='#d23a2e';g.fillRect(x+w/2+1,y-12,14,9);
+  }else if(b.t==='stall'){
+    g.fillStyle='#7a4a2a';g.fillRect(x+4,y+8,4,h-8);g.fillRect(x+w-8,y+8,4,h-8);
+    g.fillStyle='#b98b55';g.fillRect(x+4,y+h*.55,w-8,10);
+    for(let i=0;i<5;i++){g.fillStyle=['#7bb36a','#c9a35a','#a35a3a','#e0c070','#6b8f4f'][i];g.beginPath();g.arc(x+14+i*(w-24)/4,y+h*.5,5,0,7);g.fill();}
+    g.fillStyle=b.x<15?'#3d6fa8':'#a83d5a';g.fillRect(x,y+2,w,12);g.fillStyle='rgba(255,255,255,.35)';for(let i=0;i<w;i+=16)g.fillRect(x+i,y+2,8,12);
+  }else if(b.t==='ship'){
+    g.fillStyle='#7a5230';g.beginPath();g.moveTo(x,y+h*.45);g.lineTo(x+w,y+h*.45);g.lineTo(x+w-14,y+h-6);g.lineTo(x+14,y+h-6);g.closePath();g.fill();
+    g.fillStyle='#a27445';g.fillRect(x+20,y+h*.22,w-40,h*.25);g.fillStyle='#5a3a20';for(let i=x+26;i<x+w-24;i+=14)g.fillRect(i,y+h*.28,6,6);
+    g.fillStyle='#4a3020';g.fillRect(x+w/2-2,y-14,4,h*.4+14);g.fillStyle='#f4efe0';g.fillRect(x+w/2-22,y-10,44,24);g.strokeStyle='#bbb';g.strokeRect(x+w/2-22,y-10,44,24);
+    g.fillStyle='#2f4f7f';g.fillRect(x+w-30,y+h*.12,16,10);
+  }else if(b.t==='turtle'){
+    g.fillStyle='#6b4a2a';g.beginPath();g.moveTo(x+6,y+h*.55);g.lineTo(x+w-10,y+h*.55);g.lineTo(x+w-20,y+h-6);g.lineTo(x+16,y+h-6);g.closePath();g.fill();
+    g.fillStyle='#3f5a3a';g.beginPath();g.ellipse(x+w/2-4,y+h*.55,w/2-12,h*.38,0,Math.PI,0);g.fill();
+    g.fillStyle='#2c3f2a';for(let i=0;i<5;i++)for(let j=0;j<2;j++){g.beginPath();g.arc(x+30+i*(w-70)/4,y+h*.32+j*12,4,0,7);g.fill();}
+    g.fillStyle='#ccc';for(let i=0;i<9;i++){g.fillRect(x+22+i*(w-50)/8,y+h*.24+(i%2)*10,2,4);}
+    g.fillStyle='#c9a227';g.beginPath();g.moveTo(x+w-14,y+h*.5);g.lineTo(x+w+6,y+h*.3);g.lineTo(x+w+2,y+h*.56);g.fill();g.fillStyle='#d33';g.fillRect(x+w-2,y+h*.38,4,4);
+  }
+}
+function buildMap(m){
+  m.block=new Set();for(const b of m.bld)for(let j=b.y;j<b.y+b.h;j++)for(let i=b.x;i<b.x+b.w;i++)m.block.add(i+','+j);
+  const c=document.createElement('canvas');c.width=W;c.height=ROWS*T;const g=c.getContext('2d');const p=PAL[m.season];
+  const base=m.g.map(r=>r.slice());
+  for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++)drawTile(g,base[y][x],x*T,y*T,p,x,y);
+  m.water=[];for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++)if(base[y][x]==='~')m.water.push([x,y]);
+  for(const b of m.bld)drawBld(g,b);
+  m.layer=c;return m;
+}
+
+/* ================= 장 (2D 맵 장면) ================= */
+const pathLine=(o)=>o[S.path]||o.none;
+const CHAPTERS={
+ P:{name:'프롤로그',place:'동래 초가 마을',year:'1588년 · 8세',map:()=>MAPS.village('spring'),start:[14,11],obj:'할머니(!)를 찾아 말을 걸어 보자',
+  npcs:[{id:'grandma',x:5,y:6,main:1},{id:'mom',x:10,y:6,say:[['mom','할머니 옛이야기는 언제 들어도 재미있지. 어서 할머니께 가 보렴.']]},{id:'kid',x:17,y:10,say:[['kid','나는 서당에 다녀! 그런데 한자는 너무 어려워…']]},{id:'merchant',x:24,y:7,say:[['merchant','요즘 바다 건너 일본이 힘을 키운다는 소문이 있더구나. 별일 없어야 할 텐데.']]}],
+  intro:()=>[['','1588년 봄, 동래. 여덟 살이 되었다.'],['','(방향키·WASD로 움직이고, 스페이스나 A 버튼으로 말을 걸어요. 화면을 눌러 이동해도 돼요.)']],
+  pre:()=>[['grandma',`${N()}, 이리 오너라. 옛날이야기 하나 해 주마.`],['grandma','세종 임금님 때 일이란다. 그때 백성들은 어려운 한자를 몰라 억울한 일이 있어도 글로 적지 못했지.'],['grandma','세종 임금님은 그런 백성을 딱하게 여겨, 누구나 쉽게 배우는 스물여덟 글자를 만드셨어. 그게 바로 훈민정음이란다.'],['grandma','1443년에 만들고, 1446년에 온 나라에 널리 알리셨지.'],
+   {who:'p',t:'할머니께 무엇을 여쭤볼까?',c:[{t:'"글자가 어떻게 그렇게 쉬워요?"',e:{지혜:1},then:[['grandma','자음과 모음을 모으기만 하면 소리 나는 대로 글자가 된단다. 한번 해 보련?']]},{t:'"저도 한글로 편지를 쓰고 싶어요!"',e:{인정:1},then:[['grandma','그 마음이 참 곱구나. 그럼 글자 만드는 법부터 배워 보자.']]}]}],
+  mission:'hangul',card:'c1',
+  post:()=>[['grandma','잘했다! 이 빈 책을 너에게 주마. 이름은 『인생실록』이란다.'],['grandma','앞으로 네가 겪는 일을 한글로 차곡차곡 적어 두어라. 언젠가 누군가에게 큰 이야기가 될 게다.'],['','『인생실록』을 받았다! 역사 속 사건을 겪을 때마다 실록 카드가 한 장씩 채워진다.']]},
+ c1:{name:'1장',place:'동래성',year:'1592년 4월 · 12세',map:MAPS.dongnae,start:[8,8],obj:'동래 부사 송상현(!)을 찾아가자',
+  npcs:[{id:'song',x:16,y:10,main:1},{id:'soldier',x:13,y:11,say:[['soldier','부사 나리께서는 성을 버리지 않겠다고 하셨다.']]},{id:'soldier',x:17,y:11,say:[['soldier','적이 너무 많아… 너는 어서 피하거라.']]},{id:'villager',x:9,y:7,say:[['villager','부산진성이 하루 만에 무너졌대! 정발 장군도 끝까지 싸우셨다는구먼.']]},{id:'mom',x:20,y:7,say:[['mom','송상현 부사 나리께 인사드리고 어서 떠나자.']]}],
+  intro:()=>[['','1592년 4월. 부산진성이 무너졌다는 소식에 동래성 안이 술렁인다.']],
+  pre:()=>[['song','얘야, 여기는 위험하다. 어서 어머니 손을 잡고 북쪽으로 피하거라.'],
+   {who:'p',t:'송상현 부사에게 뭐라고 말할까?',c:[{t:'"부사 나리는 왜 피하지 않으세요?"',e:{지혜:1},then:[['song','적이 \'싸우려면 싸우고, 싸우지 않으려면 길을 빌려 달라\'고 하더구나.'],['song','나는 이렇게 답했다. \'싸워서 죽기는 쉬워도, 길을 빌려주기는 어렵다.\''],['song','이 땅과 백성을 지키는 것이 내 일이란다.']]},{t:'"저도 성을 지키고 싶어요!"',e:{용기:1},then:[['song','그 마음이 참 고맙구나. 하지만 네가 살아남아 오늘을 기억하는 것도 나라를 지키는 일이다.'],['song','적은 길을 빌려 달라 했지만, 나는 결코 길을 내어 줄 수 없다고 답했단다.']]}]},
+   ['song','자, 서둘러 피란 짐을 꾸려라. 꼭 필요한 것만 챙겨야 한다.']],
+  mission:'pack',card:'c2',
+  post:()=>[['','그날 동래성은 함락되었다. 송상현 부사는 끝까지 성을 지키다 세상을 떠났다.'],['mom',`${N()}, 서둘러야 한다. 어느 길로 피란할까?`],
+   {who:'p',t:'어느 길로 갈까? (한 번 고르면 바꿀 수 없어요)',c:[{t:'의병의 길 — 의령 외삼촌을 따라가 의병을 돕는다',e:{용기:2},set:'의병'},{t:'수군의 길 — 바닷가 친척을 따라 수군 진영으로 간다',e:{용기:1,지혜:1},set:'수군'},{t:'의원의 길 — 의원 할아버지를 따라 다친 사람을 돌본다',e:{인정:2},set:'의원'}]},
+   ()=>[['',`${S.path}의 길을 골랐다. 송상현 부사의 말이 귀에 맴돈다.`]]]},
+ c2:{name:'2장',place:'의령 의병 진영',year:'1592년 여름 · 12세',map:MAPS.uiryeong,start:[15,9],obj:'의병장 곽재우(!)를 만나자',
+  npcs:[{id:'kwak',x:15,y:5,main:1},{id:'uibyeong',x:9,y:6,say:[['uibyeong','우리는 군인이 아니야. 농사짓던 백성, 글 읽던 선비들이지.']]},{id:'uibyeong',x:21,y:6,say:[['uibyeong','곽 장군님은 고향 산과 강을 손바닥 보듯 아신다네.']]},{id:'woman',x:5,y:9,say:[['woman','의병들 밥은 우리 마을 아낙들이 짓고 있어요.']]}],
+  intro:()=>[['','1592년 여름, 경상도 의령. 남강 가에 의병들이 모여 있다.']],
+  pre:()=>[['kwak',pathLine({의병:'네가 외삼촌이 말하던 아이로구나. 오늘부터 우리 의병의 전령이 되어 다오.',수군:'바닷가로 가는 길이라고? 가는 길에 우리 의병이 어떻게 싸우는지 보고 가거라.',의원:'다친 의병들을 돌봐 준다니 고맙구나.',none:'어서 오너라. 반갑구나.'})],
+   ['kwak','나는 곽재우다. 나라가 위태로운데 가만히 있을 수 없어 재산을 털어 의병을 일으켰지.'],
+   {who:'p',t:'곽재우 장군에게 물어보자.',c:[{t:'"왜 붉은 옷을 입으셨어요?"',e:{지혜:1},then:[['kwak','붉은 옷은 멀리서도 눈에 띄지. 적에게는 두려움을, 우리 편에게는 용기를 주려고 입었단다.'],['kwak','그래서 사람들이 나를 \'홍의장군\'이라 부르지.']]},{t:'"군인도 아닌데 어떻게 이겨요?"',e:{용기:1},then:[['kwak','우리는 이 고장의 산과 강, 숲길을 누구보다 잘 안다. 그것이 의병의 가장 큰 무기란다.'],['kwak','붉은 옷을 입고 앞장서니 사람들은 나를 \'홍의장군\'이라 부르더구나.']]}]},
+   ['kwak','자, 너도 지형을 살펴 어디서 적을 막을지 함께 생각해 보자.']],
+  mission:'ambush',card:'c3',
+  post:()=>[['kwak','훌륭하다! 실제로 우리는 남강 정암진에서 강을 건너던 적을 물리쳤단다.'],['kwak','전국에서 백성과 선비, 승려들이 의병이 되어 일어나고 있다. 나라는 혼자 지키는 게 아니야.']]},
+ c3:{name:'3장',place:'한산도 앞바다',year:'1592년 7월 · 12세',map:MAPS.hansan,start:[4,9],obj:'부두에 있는 이순신 장군(!)을 찾아가자',
+  npcs:[{id:'yi',x:17,y:7,main:1},{id:'rower',x:14,y:8,say:[['rower','노 젓는 격군이 힘을 맞춰야 판옥선이 빠르게 방향을 바꿀 수 있어!']]},{id:'fisher',x:10,y:12,say:[['fisher','견내량은 물길이 좁고 바위가 많아. 큰 배끼리 싸우기는 어렵지.']]},{id:'soldier',x:6,y:7,say:[['soldier','저기 등에 뾰족한 쇠못이 박힌 배가 거북선이야. 적이 올라타지 못하지.']]}],
+  intro:()=>[['','1592년 7월, 한산도. 조선 수군의 판옥선이 바다에 늘어서 있다.']],
+  pre:()=>[['yi',pathLine({수군:'네가 새로 온 격군이로구나. 오늘 싸움에서 신호 깃발을 잘 보아 두어라.',의병:'의병의 전령이 여기까지 왔구나. 육지 소식을 전해 주어 고맙다.',의원:'다친 군사들을 돌보러 왔다니 고맙구나.',none:'어서 오너라.'})],
+   ['yi','나는 전라 좌수사 이순신이다. 지금 적의 배가 견내량에 모여 있다.'],
+   {who:'p',t:'이순신 장군에게 물어보자.',c:[{t:'"거북선은 어떤 배예요?"',e:{지혜:1},then:[['yi','판옥선 위를 둥근 덮개로 덮고 쇠못을 박은 배다. 적이 올라탈 수 없고, 앞의 용머리와 옆에서 대포를 쏠 수 있지.']]},{t:'"적이 많은데 무섭지 않으세요?"',e:{용기:1},then:[['yi','두렵지 않은 사람은 없다. 하지만 바다를 지키지 못하면 백성의 곡식과 목숨도 지킬 수 없다.']]}]},
+   ['yi','견내량은 좁아 우리 판옥선이 싸우기 어렵다. 좋은 꾀가 없겠느냐?']],
+  mission:'crane',card:'c4',
+  post:()=>[['yi','바로 그것이다! 학이 날개를 펼치듯 적을 감싸는 이 진을 학익진이라 한다.'],['','조선 수군은 한산도 앞바다에서 일본 수군을 크게 무찔렀다. 이 싸움을 한산도대첩이라 한다.'],['yi','바다를 지키니 적은 곡식과 군사를 배로 나르기 어려워질 것이다.']]},
+ c4:{name:'4장',place:'행주산성',year:'1593년 2월 · 13세',map:MAPS.haengju,start:[15,10],obj:'성을 지키는 권율 장군(!)을 만나자',
+  npcs:[{id:'gwon',x:15,y:6,main:1},{id:'woman',x:9,y:10,say:[['woman','우리 아낙들도 돌을 날라 싸움을 돕고 있어요.']]},{id:'monk',x:20,y:8,say:[['monk','처영 스님을 따라 우리 승병도 함께 싸우러 왔소.']]},{id:'soldier',x:12,y:8,say:[['soldier','적이 몇 번이고 성을 향해 몰려온다! 정신 바짝 차려라.']]}],
+  intro:()=>[['','1593년 2월, 행주산성. 한양 가까운 언덕 위 성에 관군과 백성이 모였다.']],
+  pre:()=>[['gwon',pathLine({의병:'의병 전령이로구나. 마침 일손이 모자랐다.',수군:'바다에서 온 격군이로구나. 수군 덕분에 적의 보급이 많이 끊겼다.',의원:'다친 사람이 많다. 네 손이 꼭 필요하구나.',none:'어서 오너라. 일손이 모자란다.'})],
+   ['gwon','나는 전라도 순찰사 권율이다. 이 성에는 군사가 많지 않지만, 백성과 승병이 함께 싸우고 있다.'],
+   {who:'p',t:'권율 장군에게 물어보자.',c:[{t:'"적이 훨씬 많은데 어떻게 막아요?"',e:{지혜:1},then:[['gwon','높은 언덕 위의 성이라 적이 올라오기 힘들다. 돌과 활, 화차까지 모두 써서 막는다.']]},{t:'"저도 돕고 싶어요!"',e:{용기:1},then:[['gwon','좋다! 성 위 군사들이 외치는 대로 돌과 재를 날라 주어라.']]}]},
+   ['gwon','군사들이 "돌!" 하면 돌을, "재!" 하면 재 주머니를 건네주어라. 재를 뿌리면 적이 눈을 뜨기 어렵지.']],
+  mission:'stones',card:'c5',
+  post:()=>[['','관군과 승병, 백성이 힘을 모아 일본군을 크게 물리쳤다. 이 싸움을 행주대첩이라 한다.'],['gwon','오늘의 승리는 성 안 모든 사람의 것이다.']]},
+ c5:{name:'5장',place:'한양 약재 시장',year:'1610년 가을 · 30세',map:MAPS.hanyang,start:[15,13],obj:'내의원 앞의 허준(!)을 만나자',
+  npcs:[{id:'heo',x:15,y:6,main:1},{id:'official',x:18,y:6,say:[['official','허준 어른께서 큰 의학 책을 마무리하고 계신다네.']]},{id:'seller',x:5,y:8,say:[['seller','이 도라지는 우리 뒷산에서 캔 거라 값이 싸지!']]},{id:'seller2',x:21,y:8,say:[['seller2','이 약재는 배를 타고 먼 남쪽 나라에서 왔소. 값이 아주 비싸다오.']]},{id:'sick',x:10,y:12,say:[['sick','전쟁 뒤로 몸이 성한 데가 없소. 비싼 약은 꿈도 못 꾸지.']]}],
+  intro:()=>[['','1610년 가을, 한양. 전쟁이 끝난 지 10년이 넘었지만 병들고 가난한 백성이 많다.']],
+  pre:()=>[['heo',pathLine({의원:'전쟁 때부터 사람을 돌봐 왔다고? 마침 내 일을 도울 사람이 필요했네.',none:'어서 오게. 약재 고르는 일을 좀 도와주겠나?'})],
+   ['heo','나는 내의원 의관 허준일세. 선조 임금의 명을 받아 오랫동안 의학 책을 써 왔지.'],['heo','전쟁 통에 함께 책을 쓰던 이들이 흩어져, 나 혼자 남아 마무리하고 있다네.'],
+   {who:'p',t:'허준에게 물어보자.',c:[{t:'"어떤 책을 쓰고 계세요?"',e:{지혜:1},then:[['heo','우리 땅에서 나는 약재와 치료법을 모아, 백성이 쉽게 병을 고치도록 정리한 책이라네.']]},{t:'"아픈 사람들을 어떻게 도울 수 있어요?"',e:{인정:1},then:[['heo','비싼 약 대신 우리 산과 들의 약재를 잘 알면 많은 사람을 살릴 수 있지.']]}]},
+   ['heo','시장에서 우리 땅에서 나는 약재를 골라 오게.']],
+  mission:'herbs',card:'c9',
+  post:()=>[['heo','고맙네. 이제 이 책 『동의보감』을 마무리할 수 있겠어.'],['','1610년, 허준은 『동의보감』을 완성했다. 이 책은 오늘날 유네스코 세계 기록 유산이 되었다.']]},
+ c6:{name:'6장',place:'남한산성',year:'1636년 겨울 · 56세',map:MAPS.namhan,start:[15,11],obj:'행궁 앞의 최명길·김상헌(!)에게 가 보자',
+  npcs:[{id:'injo',x:15,y:6,say:[['injo','과인이 어찌해야 백성을 지킬 수 있단 말인가…']]},{id:'choi',x:12,y:7,main:1},{id:'kim',x:18,y:7,main:1},{id:'soldier',x:8,y:11,say:[['soldier','손이 얼어서 활을 당길 수가 없어. 성안 곡식도 얼마 안 남았다더군.']]},{id:'soldier',x:21,y:11,say:[['soldier','성 밖은 온통 청나라 군사뿐이야. 도와줄 군대도 오지 않고…']]}],
+  intro:()=>[['','1636년 겨울, 남한산성. 청나라 군대에 둘러싸인 성안은 춥고 배고프다.']],
+  pre:()=>[['',pathLine({의원:'다친 군사들에게 죽을 나르던 중, 두 신하의 큰 목소리가 들려왔다.',none:'성벽의 군사들에게 죽을 나르던 중, 두 신하의 큰 목소리가 들려왔다.'})],
+   ['choi','전하, 성안에 먹을 것이 떨어져 갑니다. 지금은 청과 화친해 백성과 나라를 지켜야 합니다.'],
+   ['kim','아니 되옵니다! 청에 무릎 꿇을 수는 없습니다. 명과의 의리를 지키며 끝까지 맞서야 합니다.'],
+   ['injo','두 사람 모두 나라를 위한 말이로다… 과인은 어찌해야 하는가.'],
+   ['choi','너도 들었느냐? 누군가는 욕을 먹더라도 백성이 살 길을 찾아야 하지 않겠느냐.'],
+   ['kim','나라의 자존심을 지키는 것도 백성을 지키는 길이란다.'],
+   ['','두 신하의 말을 잘 듣고, 각 말이 어느 주장인지 나누어 보자.']],
+  mission:'debate',card:'c12',
+  post:()=>[['','성안의 식량이 다 떨어지자, 1637년 1월 인조는 삼전도에서 청에 항복했다.'],['','소현세자와 봉림대군, 그리고 많은 백성이 청나라로 끌려갔다.'],['injo','백성들에게 면목이 없구나…'],['','훗날 최명길과 김상헌은 모두 청나라에 붙잡혀 가기도 했다. 두 사람은 생각이 달랐지만 모두 나라를 걱정했다.']]},
+ E:{name:'에필로그',place:'고향 동래',year:'1637년 · 57세',map:()=>MAPS.village('autumn'),start:[14,11],obj:'마루 앞의 손주(!)에게 가 보자',
+  npcs:[{id:'grandkid',x:5,y:6,main:1},{id:'old',x:10,y:6,say:[['old','자네 손주가 벌써 저렇게 컸구먼. 세월 참 빠르지.']]},{id:'woman',x:17,y:10,say:[['woman','두 번의 큰 전쟁을 겪고도 이렇게 다시 모여 사니 다행이에요.']]}],
+  intro:()=>[['','1637년, 고향 동래. 머리가 하얗게 센 채로 손주와 마주 앉았다.']],
+  pre:()=>[['grandkid',`${S.gender==='boy'?'할아버지':'할머니'}, 그 책은 뭐예요?`],['p','내가 평생 겪은 일을 적은 『인생실록』이란다. 우리 할머니께서 주신 책이지.'],['grandkid','저도 읽고 싶어요! 무슨 일이 먼저 일어났어요?'],['p','그럼 함께 차례대로 정리해 볼까?']],
+  mission:'timeline',card:null,
+  post:()=>[['grandkid','우와, 어려운 때에도 사람들이 서로 도우며 나라를 지켰구나!'],['p','그렇단다. 이제 이 책은 너에게 주마. 네 이야기도 한글로 차곡차곡 적어 두려무나.']]}
+};
+
+/* ================= 대화 ================= */
+const D={q:[],cb:null,full:'',n:0,timer:null,choice:null};
+function speaker(id){
+  if(id===''){DLG.classList.add('narr');return;}
+  DLG.classList.remove('narr');
+  const o=id==='p'?pchar():CH[id].o;DNM.textContent=id==='p'?(S.name||'나'):CH[id].n;
+  PCX.clearRect(0,0,96,96);PCX.fillStyle='#efe2c6';PCX.fillRect(0,0,96,96);drawChar(PCX,8,10,o,'down',0,2.5);
+}
+function typeText(t,instant){clearInterval(D.timer);D.full=t;if(instant){D.n=t.length;DTX.textContent=t;return;}D.n=0;DTX.textContent='';
+  D.timer=setInterval(()=>{D.n++;DTX.textContent=D.full.slice(0,D.n);if(D.n%4===0)snd('blip');if(D.n>=D.full.length)clearInterval(D.timer);},20);}
+function talk(steps,cb){D.q=(steps||[]).slice();D.cb=cb||null;DLG.classList.remove('hidden');next();}
+function next(){
+  clearInterval(D.timer);D.choice=null;DCH.innerHTML='';DLG.querySelector('.nx').style.display='';
+  if(!D.q.length){DLG.classList.add('hidden');const c=D.cb;D.cb=null;if(c)c();return;}
+  const st=D.q.shift();
+  if(typeof st==='function'){const r=st();if(Array.isArray(r))D.q.unshift(...r);return next();}
+  if(!Array.isArray(st)){
+    D.choice=st;speaker(st.who||'p');typeText(st.t,true);DLG.querySelector('.nx').style.display='none';
+    DCH.innerHTML=st.c.map((o,i)=>`<button class="cbtn" data-i="${i}"><b>${i+1}</b>${o.t}</button>`).join('');
+    DCH.querySelectorAll('.cbtn').forEach(b=>b.addEventListener('click',ev=>{ev.stopPropagation();pick(+b.dataset.i);}));
+    return;
+  }
+  speaker(st[0]);typeText(st[1]);
+}
+function pick(i){const st=D.choice;if(!st||!st.c[i])return;const o=st.c[i];snd('blip');if(o.set)S.path=o.set;if(o.e)eff(o.e);if(o.then)D.q.unshift(...o.then);next();}
+function adv(){if(DLG.classList.contains('hidden'))return false;if(D.choice)return true;if(D.n<D.full.length){clearInterval(D.timer);D.n=D.full.length;DTX.textContent=D.full;}else next();return true;}
+DLG.addEventListener('click',()=>adv());
+
+/* ================= 패널 ================= */
+function openP(html,cls){PNL.className=cls||'';PNL.innerHTML=html;PNL.scrollTop=0;}
+function closeP(){PNL.className='hidden';PNL.innerHTML='';}
+function on(sel,fn){PNL.querySelectorAll(sel).forEach(el=>el.addEventListener('click',fn));}
+const pOpen=()=>!PNL.classList.contains('hidden');
+
+function showCard(id,cb){
+  const c=CARDS[id];if(!S.cards.includes(id))S.cards.push(id);snd('card');hud();
+  openP(`<h2>실록 카드 획득!</h2><div class="card"><span class="no">${CARD_IDS.indexOf(id)+1} / 12</span><div class="yr">${c.y}</div><h3>${c.t}</h3><p>${c.d}</p></div><div class="row"><button class="btn" id="go">인생실록에 적기</button></div>`);
+  on('#go',()=>{closeP();cb&&cb();});
+}
+/* mode: 'quiz'(점수 기록) | 'm'(미션 내부) */
+function mcq(o,cb){
+  const opts=shuffle(o.a.map((t,i)=>({t,ok:i===0})));
+  openP(`<h2>${o.title||'확인 문제'}</h2><p style="font-size:21px"><b>${o.q}</b></p>${opts.map((x,i)=>`<button class="opt" data-i="${i}">${i+1}. ${x.t}</button>`).join('')}<p class="fb" id="fb"></p><div class="row"><button class="btn hidden" id="go">다음</button></div>`);
+  let answered=false;
+  on('.opt',e=>{if(answered)return;answered=true;const i=+e.currentTarget.dataset.i,ok=opts[i].ok;
+    PNL.querySelectorAll('.opt').forEach((b,k)=>{if(opts[k].ok)b.classList.add('ok');else if(k===i)b.classList.add('bad');});
+    $('#fb').textContent=ok?(o.good||'정답이에요!'):(o.bad||`아쉬워요. 정답은 「${o.a[0]}」예요.`);
+    snd(ok?'ok':'no');
+    if(o.mode==='quiz'){S.qt++;if(ok){S.qc++;S.qs+=10;}else if(o.card&&!S.wrong.includes(o.card))S.wrong.push(o.card);hud();}
+    $('#go').classList.remove('hidden');$('#go').onclick=()=>{closeP();cb&&cb(ok);};
+  });
+}
+function askCardQ(card,cb){
+  const list=QB[card];let k=list.findIndex((_,i)=>!S.asked.includes(card+'-'+i));if(k<0)k=0;
+  S.asked.push(card+'-'+k);mcq({q:list[k].a?list[k].q:'',a:list[k].a,mode:'quiz',card,title:'실록 확인 문제'},cb);
+}
+
+/* ================= 미션 ================= */
+function missionDone(score,cb){snd('ok');openP(`<h2>미션 완료!</h2><div class="score">${score}<small>점</small></div><div class="row"><button class="btn" id="go">계속</button></div>`,'small');on('#go',()=>{closeP();cb(score);});}
+const MISSIONS={
+ hangul(done){
+  const words=[['나','라'],['백','성'],['한','글']],tg=words.flat();let k=0,wrong=0;const sel={c:null,j:null,g:0};
+  const CHO={'ㄱ':0,'ㄴ':2,'ㄷ':3,'ㄹ':5,'ㅂ':7,'ㅅ':9,'ㅇ':11,'ㅎ':18},JUNG={'ㅏ':0,'ㅐ':1,'ㅓ':4,'ㅗ':8,'ㅡ':18,'ㅣ':20},JONG={'없음':0,'ㄱ':1,'ㄴ':4,'ㄹ':8,'ㅇ':21};
+  const comp=()=>sel.c===null||sel.j===null?'?':String.fromCharCode(0xAC00+(sel.c*21+sel.j)*28+sel.g);
+  const row=(lab,obj,key,wide)=>`<div><span class="lab">${lab}</span>${Object.keys(obj).map(x=>`<button class="jm ${wide&&x==='없음'?'w':''} ${sel[key]===obj[x]?'on':''}" data-t="${key}" data-v="${obj[x]}">${x}</button>`).join('')}</div>`;
+  function draw(msg){const w=words[k>>1];
+   openP(`<h2>훈민정음 글자 만들기 (${k+1}/6)</h2><p>자음 + 모음 (+ 받침)을 모아 낱말 <b>「${w.join('')}」</b>의 <b class="hl" style="font-size:26px">${tg[k]}</b> 자를 만들어 보세요.</p>
+   <div class="hg"><div class="prev">${comp()}</div><div class="rows">${row('자음',CHO,'c')}${row('모음',JUNG,'j')}${row('받침',JONG,'g',1)}</div></div>
+   <p class="fb">${msg||''}</p><div class="row"><button class="btn" id="ok">확인</button></div>`);
+   on('.jm',e=>{const b=e.currentTarget;sel[b.dataset.t]=+b.dataset.v;snd('blip');draw();});
+   on('#ok',()=>{if(comp()===tg[k]){snd('ok');k++;sel.c=null;sel.j=null;sel.g=0;if(k>=6)done(Math.max(40,100-wrong*10));else draw('좋아요! 다음 글자예요.');}else{wrong++;snd('no');draw('다시 해 보자! 소리를 천천히 내며 자음과 모음을 골라 봐.');}});
+  }draw();
+ },
+ pack(done){
+  const items=[['곡식','곡식 자루','피란길에 먹을 양식'],['약초','약초 꾸러미','다친 사람을 돌볼 수 있다'],['실록','『인생실록』','할머니께 받은 책'],['엽전','엽전 꾸러미','길에서 물건을 살 돈'],['놋그릇','놋그릇 세트','집에서 아끼던 무거운 그릇']];
+  const chosen=[];
+  function draw(){openP(`<h2>피란 짐 꾸리기</h2><p>멀리 걸어가야 해요. 짐은 <b>3개</b>만 챙길 수 있어요. (${chosen.length}/3)</p>
+   <div class="grid" style="grid-template-columns:repeat(5,1fr)">${items.map(it=>`<div class="tile ${chosen.includes(it[0])?'on':''}" data-id="${it[0]}"><b>${it[1]}</b>${it[2]}</div>`).join('')}</div>
+   <div class="row"><button class="btn" id="go" ${chosen.length===3?'':'disabled'}>피란 떠나기</button></div>`);
+   on('.tile',e=>{const id=e.currentTarget.dataset.id,i=chosen.indexOf(id);if(i>=0)chosen.splice(i,1);else if(chosen.length<3)chosen.push(id);snd('blip');draw();});
+   on('#go',()=>{if(chosen.length<3)return;S.items=chosen.slice();const heavy=chosen.includes('놋그릇');const p=heavy?20:50;
+    openP(`<h2>짐 꾸리기 결과</h2><p>${heavy?'무거운 놋그릇 때문에 걸음이 느려졌어요. 피란길에는 가볍고 꼭 필요한 것만!':'가볍고 꼭 필요한 짐을 잘 챙겼어요!'}</p><p>${chosen.includes('약초')?'약초는 피란길에서 다친 이웃을 도울 때 쓰일 거예요.':''}</p><div class="score">${p}<small>점</small></div><div class="row"><button class="btn" id="n">다음: 확인 문제</button></div>`,'small');
+    on('#n',()=>mcq({title:'동래성 확인 문제 (1/2)',q:QB.c2[0].q,a:QB.c2[0].a},ok1=>mcq({title:'동래성 확인 문제 (2/2)',q:QB.c2[1].q,a:QB.c2[1].a},ok2=>done(p+(ok1?25:0)+(ok2?25:0)))));
+   });
+  }draw();
+ },
+ ambush(done){
+  const sc=[
+   {q:'일본군이 남강을 건너려고 나루터에 모였다. 의병은 어디에 숨어 기다릴까?',a:['강가의 갈대숲','넓은 들판 한가운데','마을 안 집 뒤'],good:'맞아! 적이 물을 건너느라 흩어질 때 갈대숲에서 공격하면 적은 수로도 이길 수 있지.'},
+   {q:'일본군의 짐수레 행렬이 좁은 고갯길을 지나간다. 어디서 막을까?',a:['고갯길 양쪽 숲 위','고갯길 입구 정면에 줄지어 서기','먼 산꼭대기'],good:'좋다! 좁은 길 위쪽 숲에 숨으면 적은 넓게 퍼지지 못하지.'},
+   {q:'수많은 일본군 본대가 넓은 들판으로 몰려온다. 어떻게 할까?',a:['숲으로 물러나 때를 기다린다','들판에서 정면으로 맞선다','들판에 모두 모여 진을 친다'],good:'현명하다! 의병은 수가 적으니 불리한 곳에서는 싸우지 않고 때를 기다린단다.'}];
+  let k=0,score=0;const pts=[34,33,33];
+  const step=()=>{if(k>=3)return done(score);const s=sc[k];mcq({title:`매복 작전 (${k+1}/3)`,q:s.q,a:s.a,good:s.good,bad:`곽재우: "음… 「${s.a[0]}」이 더 좋겠구나. 지형을 살려야 한다."`},ok=>{if(ok)score+=pts[k];k++;step();});};step();
+ },
+ crane(done){
+  let lure=0;
+  mcq({title:'한산도 작전 (1/2)',q:'견내량은 좁고 암초가 많아 큰 판옥선이 싸우기 어렵다. 어떻게 할까?',a:['배 몇 척을 보내 적을 넓은 바다로 끌어낸다','모든 배가 좁은 견내량으로 들어간다','적이 지나갈 때까지 숨어서 기다린다'],good:'이순신: "좋다! 적을 넓은 한산도 앞바다로 끌어내자."'},ok=>{lure=ok?40:0;formation();});
+  function formation(){
+   const CW=9,CH=7,CS=50,TG=[[3,0],[5,1],[6,2],[6,4],[5,5],[3,6]];const placed=[];let show=true,result=null;
+   openP(`<h2>한산도 작전 (2/2) — 학익진 펼치기</h2><p id="ins">학이 날개를 펼친 모양을 기억하세요! 잠시 뒤 사라져요.</p><div style="text-align:center"><canvas id="cc" width="${CW*CS}" height="${CH*CS}" style="border:3px solid #4a3a28;border-radius:10px;cursor:pointer;max-width:100%"></canvas></div>
+    <p class="fb" id="fb">판옥선 0/6척</p><div class="row"><button class="btn sub" id="hint">모양 다시 보기</button><button class="btn" id="atk" disabled>공격!</button></div>`);
+   const c=$('#cc'),g=c.getContext('2d');let raf;
+   function draw(t){
+    g.fillStyle='#3d8fd1';g.fillRect(0,0,c.width,c.height);
+    g.strokeStyle='rgba(255,255,255,.18)';for(let i=1;i<CW;i++){g.beginPath();g.moveTo(i*CS,0);g.lineTo(i*CS,c.height);g.stroke();}for(let j=1;j<CH;j++){g.beginPath();g.moveTo(0,j*CS);g.lineTo(c.width,j*CS);g.stroke();}
+    g.fillStyle='rgba(255,255,255,.25)';for(let i=0;i<14;i++){const x=(i*73+t*20)%c.width,y=(i*41)%c.height;g.fillRect(x,y,10,2);}
+    g.fillStyle='rgba(200,60,60,.15)';g.fillRect(0,0,CS*2,c.height);
+    for(let j=2;j<=4;j++)for(let i=0;i<2;i++){ship(i*CS+CS/2,j*CS+CS/2,'#6b2a2a','#e9d2c0');}
+    g.fillStyle='#fff';g.font='14px Jua,sans-serif';g.fillText('일본 수군',8,18);
+    if(show||result){for(const [x,y] of TG){g.strokeStyle=result?'#7CFC00':'#fff';g.lineWidth=3;g.setLineDash([6,4]);g.beginPath();g.arc(x*CS+CS/2,y*CS+CS/2,CS/2-5,0,7);g.stroke();g.setLineDash([]);}}
+    for(const [x,y] of placed)ship(x*CS+CS/2,y*CS+CS/2,'#7a5230','#f4efe0');
+    raf=requestAnimationFrame(tt=>draw(tt/1000));
+   }
+   function ship(x,y,hull,sail){g.fillStyle=hull;g.beginPath();g.moveTo(x-18,y);g.lineTo(x+18,y);g.lineTo(x+12,y+10);g.lineTo(x-12,y+10);g.fill();g.fillStyle='#4a3020';g.fillRect(x-1,y-16,2,16);g.fillStyle=sail;g.fillRect(x-9,y-15,18,12);}
+   draw(0);
+   const hideAfter=ms=>setTimeout(()=>{show=false;const ins=$('#ins');if(ins)ins.textContent='빈 바다를 눌러 판옥선 6척을 학익진 모양으로 놓으세요. 다시 누르면 빠져요.';},ms);
+   hideAfter(3000);
+   c.addEventListener('click',e=>{if(result)return;const r=c.getBoundingClientRect();const x=Math.floor((e.clientX-r.left)/r.width*CW),y=Math.floor((e.clientY-r.top)/r.height*CH);
+    if(x<2){toast('일본 수군이 있는 곳이에요');return;}const i=placed.findIndex(p=>p[0]===x&&p[1]===y);if(i>=0)placed.splice(i,1);else if(placed.length<6)placed.push([x,y]);snd('blip');
+    $('#fb').textContent=`판옥선 ${placed.length}/6척`;$('#atk').disabled=placed.length<6;});
+   on('#hint',()=>{if(result)return;show=true;hideAfter(1500);});
+   on('#atk',()=>{if(placed.length<6||result)return;
+    const rem=TG.map(p=>p.slice());let f=0;const left=[];
+    for(const p of placed){const i=rem.findIndex(q=>q[0]===p[0]&&q[1]===p[1]);if(i>=0){rem.splice(i,1);f+=10;}else left.push(p);}
+    for(const p of left){const i=rem.findIndex(q=>Math.max(Math.abs(q[0]-p[0]),Math.abs(q[1]-p[1]))<=1);if(i>=0){rem.splice(i,1);f+=6;}}
+    result=true;snd('ok');$('#fb').textContent=f>=50?'학익진 완성! 적을 둘러싸고 공격했다!':'날개 모양이 조금 달라요. 초록 원이 정답 모양이에요.';
+    $('#atk').textContent='계속';$('#atk').onclick=()=>{cancelAnimationFrame(raf);done(lure+f);};
+   });
+  }
+ },
+ stones(done){
+  openP(`<h2>행주산성 지키기</h2><p>성벽 위 군사가 <b>"돌!"</b> 또는 <b>"재!"</b>를 외치면, 아래 버튼에서 알맞은 것을 고른 뒤 <b>그 군사를 눌러</b> 건네주세요. 40초 동안 버텨요!</p><p>키보드: Z = 돌, X = 재 · 1·2·3 = 왼쪽·가운데·오른쪽 군사</p><div class="row"><button class="btn" id="st">시작</button></div>`,'small');
+  on('#st',run);
+  function run(){
+   openP(`<h2 style="margin-bottom:4px">행주산성 지키기 <span id="tm" style="float:right;color:#c0392b">40초</span></h2><canvas id="sc" width="720" height="300" style="border:3px solid #4a3a28;border-radius:10px;cursor:pointer;width:100%"></canvas>
+    <div class="row"><button class="btn" id="b1">돌 (Z)</button><button class="btn sub" id="b2">재 주머니 (X)</button><span id="sb" style="font-family:Jua;font-size:20px;align-self:center;margin-left:12px">성공 0</span></div>`);
+   const c=$('#sc'),g=c.getContext('2d'),LX=[130,360,590];let item='돌',req=[null,null,null],hits=0,miss=0,wrong=0,t0=performance.now(),last=t0,spawn=0,over=false,raf;
+   const setItem=v=>{item=v;$('#b1').style.outline=v==='돌'?'4px solid #ffd76a':'';$('#b2').style.outline=v==='재'?'4px solid #ffd76a':'';};setItem('돌');
+   $('#b1').onclick=()=>setItem('돌');$('#b2').onclick=()=>setItem('재');
+   const give=l=>{if(over)return;const r=req[l];if(!r)return;if(r.ty===item){hits++;req[l]=null;snd('ok');r.fx=1;}else{wrong++;snd('no');toast(`"${r.ty}!"라고 했어요`);}$('#sb').textContent='성공 '+hits;};
+   c.addEventListener('click',e=>{const rc=c.getBoundingClientRect();const x=(e.clientX-rc.left)/rc.width*720;give(x<245?0:x<475?1:2);});
+   const kh=e=>{const k=e.key.toLowerCase();if(k==='z')setItem('돌');else if(k==='x')setItem('재');else if(k==='1')give(0);else if(k==='2')give(1);else if(k==='3')give(2);};addEventListener('keydown',kh);
+   function frame(now){const el=(now-t0)/1000,dt=(now-last)/1000;last=now;const left=Math.max(0,40-el);
+    if(!$('#sc')){removeEventListener('keydown',kh);return;}
+    $('#tm').textContent=Math.ceil(left)+'초';
+    spawn-=dt;if(spawn<=0&&left>0){const free=[0,1,2].filter(i=>!req[i]);if(free.length){const l=free[Math.random()*free.length|0];req[l]={ty:Math.random()<.5?'돌':'재',t:0,life:Math.max(2.8,4.6-el*.04)};}spawn=Math.max(.9,1.7-el*.02);}
+    for(let i=0;i<3;i++){const r=req[i];if(r){r.t+=dt;if(r.t>=r.life){req[i]=null;miss++;snd('no');}}}
+    // draw
+    const sky=g.createLinearGradient(0,0,0,300);sky.addColorStop(0,'#c9d6df');sky.addColorStop(1,'#e8e1cf');g.fillStyle=sky;g.fillRect(0,0,720,300);
+    g.fillStyle='#b8ad84';g.beginPath();g.moveTo(0,300);g.lineTo(0,170);g.quadraticCurveTo(360,120,720,170);g.lineTo(720,300);g.fill();
+    g.fillStyle='#8d8f94';g.fillRect(0,96,720,40);g.fillStyle='#a6a9ae';for(let i=0;i<720;i+=24){g.fillRect(i,84,16,14);}g.fillStyle='#6f7175';g.fillRect(0,132,720,4);
+    for(let i=0;i<3;i++){const x=LX[i];
+     g.strokeStyle='#6b4a2a';g.lineWidth=4;g.beginPath();g.moveTo(x-12,290);g.lineTo(x-6,136);g.moveTo(x+12,290);g.lineTo(x+6,136);g.stroke();for(let y=150;y<290;y+=18){g.beginPath();g.moveTo(x-11,y);g.lineTo(x+11,y);g.stroke();}
+     const ey=280-((el*18+i*40)%120);drawChar(g,x-16,ey-28,{body:'#5a4a6a',hat:'helmet',helm:'#333',plume:'#555'},'up',(el*4|0),1);
+     drawChar(g,x-16,48,{body:'#3c5a8a',hat:'jeonrip'},'down',0,1.3);
+     const r=req[i];if(r){const p=1-r.t/r.life;g.fillStyle='#fff';g.beginPath();g.arc(x+34,40,22,0,7);g.fill();g.strokeStyle=p>.35?'#3d9a3d':'#c0392b';g.lineWidth=5;g.beginPath();g.arc(x+34,40,22,-Math.PI/2,-Math.PI/2+p*Math.PI*2);g.stroke();
+      g.fillStyle='#2b2218';g.font='22px Jua,sans-serif';g.textAlign='center';g.fillText(r.ty+'!',x+34,48);g.textAlign='left';}
+    }
+    if(left<=0&&!over){over=true;removeEventListener('keydown',kh);cancelAnimationFrame(raf);const tot=hits+miss+wrong;const sc=hits?Math.round(100*hits/Math.max(1,tot)):0;
+     setTimeout(()=>{openP(`<h2>성을 지켜 냈다!</h2><p>성공 ${hits}번 · 놓침 ${miss}번 · 잘못 건넴 ${wrong}번</p><p>관군과 백성이 함께 돌과 재를 날라 성을 지켰어요.</p><div class="row"><button class="btn" id="go">계속</button></div>`,'small');on('#go',()=>done(sc));},300);return;}
+    raf=requestAnimationFrame(frame);}
+   raf=requestAnimationFrame(frame);
+  }
+ },
+ herbs(done){
+  const H=[['도라지','우리 산에서 캔 뿌리',1],['쑥','우리 들판에 흔한 풀',1],['오미자','우리 산의 붉은 열매',1],['칡뿌리','우리 산에 뻗은 덩굴 뿌리',1],['육두구','바다 건너 먼 남쪽 나라에서 온 비싼 열매',0],['침향','먼 남쪽 나라에서 들여온 귀한 나무',0],['유향','먼 서쪽 나라에서 온 나무 진',0],['용연향','먼 바다에서 구하는 아주 귀한 향',0]];
+  const order=shuffle(H),sel=[];
+  function draw(reveal){openP(`<h2>우리 땅 약재 모으기</h2><p>백성이 쉽게 구해 쓸 수 있는 <b>우리 땅 약재 4가지</b>를 고르세요. (${sel.length}/4)</p>
+   <div class="grid">${order.map((h,i)=>`<div class="tile ${reveal?(h[2]?'ok':sel.includes(i)?'bad':''):sel.includes(i)?'on':''}" data-i="${i}"><b>${h[0]}</b>${h[1]}</div>`).join('')}</div>
+   <div class="row"><button class="btn" id="go" ${sel.length===4||reveal?'':'disabled'}>${reveal?'다음: 확인 문제':'약재 가져가기'}</button></div>`);
+   if(!reveal){on('.tile',e=>{const i=+e.currentTarget.dataset.i,k=sel.indexOf(i);if(k>=0)sel.splice(k,1);else if(sel.length<4)sel.push(i);snd('blip');draw();});
+    on('#go',()=>{if(sel.length<4)return;snd('ok');draw(true);});}
+   else on('#go',()=>{const p=sel.filter(i=>order[i][2]).length*15;mcq({title:'동의보감 확인 문제',q:'허준이 『동의보감』을 쓴 까닭으로 가장 알맞은 것은?',a:['백성이 우리 땅 약재로 쉽게 병을 고치도록','왕실 사람들만 보려고','다른 나라에 약재를 팔려고','전쟁 무기를 만들려고']},ok=>done(p+(ok?40:0)));});
+  }draw();
+ },
+ debate(done){
+  const st=shuffle([['성안에 먹을 것이 떨어져 가니 백성을 먼저 살려야 합니다.','주화'],['지금 싸우면 나라가 완전히 무너질 수 있습니다.','주화'],['일단 화친하고 힘을 길러 훗날을 도모해야 합니다.','주화'],['청에게 무릎 꿇는 것은 나라의 큰 부끄러움입니다.','척화'],['명과 맺은 의리를 저버릴 수 없습니다.','척화'],['끝까지 맞서 싸워야 백성의 마음이 하나로 모입니다.','척화']]);
+  let k=0,ok=0;
+  function draw(fb){if(k>=6)return mine();
+   openP(`<h2>주화론과 척화론 나누기 (${k+1}/6)</h2><p><b>주화론</b>(최명길): 청과 화친하자 · <b>척화론</b>(김상헌): 끝까지 싸우자</p><div class="stmt">"${st[k][0]}"</div>
+   <div class="row"><button class="btn sub" id="a">주화론 (최명길)</button><button class="btn" id="b">척화론 (김상헌)</button></div><p class="fb">${fb||''}</p>`);
+   const pickA=v=>{const r=st[k][1]===v;if(r){ok++;snd('ok');}else snd('no');const msg=r?'맞아요!':`이 말은 ${st[k][1]==='주화'?'주화론(최명길)':'척화론(김상헌)'}이에요.`;k++;draw(msg);};
+   on('#a',()=>pickA('주화'));on('#b',()=>pickA('척화'));}
+  function mine(){const sc=Math.round(ok/6*100);
+   openP(`<h2>내 생각 고르기</h2><p>${ok}/6개를 바르게 나누었어요. 이제 <b>내 생각</b>을 골라 보세요. 어느 쪽을 골라도 점수는 같아요.</p><div class="row"><button class="btn sub" id="a">백성을 살리려면 화친해야 해요</button><button class="btn" id="b">나라의 자존심을 지켜야 해요</button></div>`,'small');
+   const fin=()=>{eff({지혜:1});openP(`<h2>좋은 생각이에요</h2><p>두 주장 모두 나라와 백성을 걱정한 마음이었어요. 중요한 것은 <b>근거</b>를 들어 생각하는 거예요.</p><div class="row"><button class="btn" id="go">계속</button></div>`,'small');on('#go',()=>done(sc));};
+   on('#a',fin);on('#b',fin);}
+  draw();
+ },
+ timeline(done){
+  const EV=[['훈민정음 창제',1443],['임진왜란 시작',1592.3],['한산도대첩',1592.6],['행주대첩',1593],['명량해전',1597],['『동의보감』 완성',1610],['정묘호란',1627],['병자호란',1636]];
+  const pool=shuffle(EV.map((e,i)=>i)),slots=Array(8).fill(null);let checked=false;
+  function draw(){openP(`<h2>인생실록 연표 완성하기</h2><p>사건 이름을 눌러 일어난 차례대로 칸에 넣으세요. 칸을 누르면 다시 빠져요.</p>
+   <div class="slots">${slots.map((s,i)=>`<div class="slot ${checked?(s===i?'ok':'bad'):''}" data-i="${i}"><i>${i+1}</i><span>${s===null?'':EV[s][0]}${checked?` <small>(${Math.floor(EV[s][1])})</small>`:''}</span></div>`).join('')}</div>
+   <div class="pool">${pool.map(i=>`<button data-i="${i}">${EV[i][0]}</button>`).join('')}</div>
+   <p class="fb" id="fb">${checked?`${slots.filter((s,i)=>s===i).length}/8칸 정답! 초록 칸이 맞은 자리예요.`:''}</p>
+   <div class="row"><button class="btn" id="go" ${!checked&&slots.includes(null)?'disabled':''}>${checked?'결과 보기':'확인'}</button></div>`);
+   if(!checked){on('.pool button',e=>{const v=+e.currentTarget.dataset.i,j=slots.indexOf(null);if(j<0)return;slots[j]=v;pool.splice(pool.indexOf(v),1);snd('blip');draw();});
+    on('.slot',e=>{const i=+e.currentTarget.dataset.i;if(slots[i]===null)return;pool.push(slots[i]);slots[i]=null;draw();});
+    on('#go',()=>{if(slots.includes(null))return;checked=true;const n=slots.filter((s,i)=>s===i).length;S.tl=n;snd(n>=6?'ok':'no');hud();draw();});}
+   else on('#go',()=>done(S.tl*10));
+  }draw();
+ }
+};
+function runMission(id,cb){MISSIONS[id](s=>missionDone(s,cb));}
+
+/* ================= HUD ================= */
+function hud(){
+  if(scene==='title'){HUD.classList.add('hidden');return;}
+  HUD.classList.remove('hidden');const sp=SP[S.pos];
+  const obj=scene==='map'&&MAP?(MAP.done?'인생실록에 기록 완료!':MAP.ch.obj):'주사위를 굴려 인생을 이어 가세요';
+  HUD.innerHTML=`<span class="who">${S.name||'나'}</span><span>${sp.y}년 · ${sp.a}세${S.path?' · '+S.path+'의 길':''}</span><span class="obj">${obj}</span>`+
+   ['용기','지혜','인정','곡식'].map(k=>`<span class="chip">${k} <b>${S.st[k]}</b></span>`).join('')+`<span class="chip">카드 <b>${S.cards.length}/12</b></span><span class="chip">점수 <b>${total()}</b></span><button id="menu">메뉴</button>`;
+  $('#menu').onclick=menu;
+}
+function menu(){
+  if(pOpen()&&!PNL.dataset.menu)return;
+  openP(`<h2>메뉴</h2><div class="row" style="flex-direction:column;align-items:center"><button class="btn sub" id="m1">${muted?'소리 켜기':'소리 끄기'}</button><button class="btn sub" id="m2">게임 방법</button><button class="btn gray" id="m3">처음 화면으로 (저장됨)</button><button class="btn" id="m4">닫기</button></div>`,'small');
+  PNL.dataset.menu='1';
+  on('#m1',()=>{muted=!muted;delete PNL.dataset.menu;closeP();});
+  on('#m2',()=>{delete PNL.dataset.menu;howTo(closeP);});
+  on('#m3',()=>{delete PNL.dataset.menu;save();closeP();DLG.classList.add('hidden');D.q=[];D.cb=null;titleScreen();});
+  on('#m4',()=>{delete PNL.dataset.menu;closeP();});
+}
+function howTo(cb){
+  openP(`<h2>게임 방법</h2><p>1580년 동래에서 태어난 백성이 되어 57년 인생을 살아요.</p>
+  <div class="legend"><span><i style="background:${SPC.d}"></i>일상</span><span><i style="background:${SPC.c}"></i>갈림길</span><span><i style="background:${SPC.m}"></i>만남(꼭 멈춤)</span><span><i style="background:${SPC.s}"></i>역사의 소용돌이(꼭 멈춤)</span><span><i style="background:${SPC.q}"></i>실록 퀴즈(꼭 멈춤)</span></div>
+  <p>· <b>인생 보드</b>: 주사위(1~3)를 굴려 나이를 먹어요.<br>· <b>만남 칸</b>: 2D 마을로 들어가 역사 인물(머리 위 <b>!</b>)을 만나요. 방향키·WASD 또는 화면을 눌러 이동, 스페이스·A 버튼으로 대화해요.<br>· 인물과 대화하고 <b>미션</b>을 풀면 <b>실록 카드</b>를 얻어요. 모두 12장!<br>· 용기·지혜·인정은 선택에 따라 바뀌고, 마지막 <b>엔딩 칭호</b>를 정해요.<br>· 마지막에 연표를 완성하면 결과 화면이 나와요. 결과 화면을 캡처해 제출하세요.</p>
+  <div class="row"><button class="btn" id="go">알겠어요</button></div>`);
+  on('#go',()=>{closeP();cb&&cb();});
+}
+
+/* ================= 타이틀 / 캐릭터 ================= */
+function titleScreen(){
+  scene='title';hud();BBAR.classList.add('hidden');PAD.classList.add('hidden');
+  const sv=loadSave();
+  openP(`<h1 class="jua" style="font-size:46px;color:#6b3f1f">역사 인생게임</h1><h2 style="font-size:26px;color:#d9613b">조선 인생실록</h2><p>임진왜란과 병자호란을 겪은 한 백성의 일생</p>
+  <div class="row" style="flex-direction:column;align-items:center"><button class="btn" id="t1">새로 시작</button>${sv&&!sv.fin?`<button class="btn sub" id="t2">이어하기 (${sv.name}, ${SP[sv.pos].y}년)</button>`:''}<button class="btn sub" id="t4">게임 방법</button><button class="btn gray" id="t3">교사용 장 선택</button></div>`,'title');
+  on('#t1',create);on('#t2',()=>{S=Object.assign(newState(),sv);closeP();enterBoard(true);});on('#t3',teacher);on('#t4',()=>howTo(titleScreen));
+}
+function create(){
+  const keep={name:S.name,gender:S.gender,color:S.color};S=newState();Object.assign(S,keep);
+  const COLORS=['#4f86c6','#d9613b','#3d9a6a','#8a5cc4','#e0a43a'];
+  function draw(){openP(`<h2>나의 캐릭터 만들기</h2><div style="display:flex;gap:24px;align-items:center;justify-content:center">
+   <canvas id="pv" width="160" height="160" style="background:#efe2c6;border-radius:16px;border:3px solid #c9b48a"></canvas>
+   <div style="text-align:left"><p>이름 <input class="nm" id="nm" maxlength="6" value="${S.name}" placeholder="이름 입력"></p>
+   <p>성별 <button class="btn ${S.gender==='boy'?'':'gray'}" id="gb">남</button><button class="btn ${S.gender==='girl'?'':'gray'}" id="gg">여</button></p>
+   <p style="display:flex;gap:10px;align-items:center">옷 색 ${COLORS.map(c=>`<span class="sw ${S.color===c?'on':''}" data-c="${c}" style="background:${c}"></span>`).join('')}</p></div></div>
+   <div class="row"><button class="btn gray" id="bk">뒤로</button><button class="btn" id="go">인생 시작!</button></div>`);
+   const pv=$('#pv').getContext('2d');drawChar(pv,16,8,pchar(8),'down',0,4);
+   const nm=$('#nm');nm.addEventListener('input',()=>{S.name=nm.value.trim();});nm.addEventListener('keydown',e=>e.stopPropagation());
+   on('#gb',()=>{S.name=nm.value.trim();S.gender='boy';draw();});on('#gg',()=>{S.name=nm.value.trim();S.gender='girl';draw();});
+   on('.sw',e=>{S.name=nm.value.trim();S.color=e.currentTarget.dataset.c;draw();});
+   on('#bk',titleScreen);
+   on('#go',()=>{S.name=nm.value.trim();if(!S.name){toast('이름을 입력해 주세요');nm.focus();return;}closeP();enterBoard(false);});
+  }draw();
+}
+function teacher(){
+  const L=[['프롤로그 — 할머니와 훈민정음',3],['1장 — 동래성 송상현',8],['2장 — 의령 곽재우',10],['3장 — 한산도 이순신',11],['4장 — 행주산성 권율',13],['5장 — 한양 허준',23],['6장 — 남한산성 최명길·김상헌',33],['에필로그 — 연표 완성',35]];
+  openP(`<h2>교사용 장 선택</h2><p>차시 수업에 맞춰 원하는 장부터 바로 시작해요. (이름은 '학생', 진로는 의병의 길로 정해져요)</p>${L.map((l,i)=>`<button class="opt" data-i="${i}">${l[0]}</button>`).join('')}<div class="row"><button class="btn gray" id="bk">뒤로</button></div>`);
+  on('.opt',e=>{const l=L[+e.currentTarget.dataset.i];S=newState();S.name='학생';S.pos=l[1];if(l[1]>8)S.path='의병';for(let i=0;i<l[1];i++)S.done[i]=true;closeP();enterBoard(true);});
+  on('#bk',titleScreen);
+}
+
+/* ================= 인생 보드 ================= */
+let rolling=false,hopT=0,dieV='?';
+const cellXY=i=>{const r=Math.floor(i/6),c=r%2===0?i%6:5-i%6;return[52+c*144,62+r*72];};
+function enterBoard(resume){
+  fade(()=>{scene='board';MAP=null;PAD.classList.add('hidden');BBAR.classList.remove('hidden');hud();
+    if(!resume){talk([['',`1580년, 부산 동래의 작은 초가집에서 아기가 태어났다. 이름은 ${S.name}.`],['','지금부터 주사위를 굴려 나의 일생을 살아 보자. 파란 칸에서는 역사 인물을 만나게 된다.']],()=>{S.done[0]=true;save();});}
+    else if(!S.done[S.pos])setTimeout(resolve,400);
+  });
+}
+function rollDice(){
+  if(rolling||scene!=='board'||locked()||!S.done[S.pos])return;
+  rolling=true;$('#roll').disabled=true;let n=0;const v=1+(Math.random()*3|0);
+  const iv=setInterval(()=>{dieV=1+(Math.random()*3|0);$('#die').textContent=dieV;snd('dice');if(++n>8){clearInterval(iv);dieV=v;$('#die').textContent=v;move(v);}},70);
+}
+function move(steps){
+  let k=0;
+  const stepOnce=()=>{if(k>=steps||S.pos>=SP.length-1){rolling=false;$('#roll').disabled=false;save();hud();setTimeout(resolve,250);return;}
+    S.pos++;k++;hopT=performance.now();snd('step');hud();
+    if(STOP[SP[S.pos].k]&&k<steps){rolling=false;$('#roll').disabled=false;save();toast('꼭 멈추는 칸이에요!');setTimeout(resolve,450);return;}
+    setTimeout(stepOnce,300);};
+  stepOnce();
+}
+function finish(){S.done[S.pos]=true;save();hud();}
+function resolve(){
+  const sp=SP[S.pos];if(S.done[S.pos])return;
+  const head=`[${sp.y}년 · ${sp.a}세] `;
+  if(sp.k==='d'){const steps=[['',head+sp.t]];if(sp.herb&&S.items.includes('약초'))steps.push(['','피란 때 챙긴 약초로 아픈 이웃을 돌보았다.']);
+    talk(steps,()=>{eff(sp.e);if(sp.herb&&S.items.includes('약초'))eff({인정:1});finish();});}
+  else if(sp.k==='c'){talk([['',head+sp.t],{who:'p',t:'어떻게 할까?',c:sp.c.map(o=>({t:o.t,e:o.e}))}],finish);}
+  else if(sp.k==='s'){const st=sp.t.map((t,i)=>['',(i?'':'⚡ 역사의 소용돌이! '+head)+t]);talk(st,()=>{if(sp.card)showCard(sp.card,()=>askCardQ(sp.card,finish));else finish();});}
+  else if(sp.k==='q'){quizSpace();}
+  else if(sp.k==='m'||sp.k==='e'){enterChapter(sp.ch);}
+  else finish();
+}
+function quizSpace(){
+  let pool=[];for(const c of S.cards)QB[c].forEach((q,i)=>{if(!S.asked.includes(c+'-'+i))pool.push([c,i]);});
+  if(pool.length<2)for(const c of(S.cards.length?S.cards:CARD_IDS))QB[c].forEach((q,i)=>pool.push([c,i]));
+  pool=shuffle(pool).slice(0,2);
+  const askOne=(j)=>{if(j>=pool.length)return finish();const [c,i]=pool[j];S.asked.push(c+'-'+i);mcq({title:`실록 퀴즈 (${j+1}/2)`,q:QB[c][i].q,a:QB[c][i].a,mode:'quiz',card:c},()=>askOne(j+1));};
+  talk([['','📜 실록 칸! 지금까지 인생실록에 적은 내용을 확인해 보자.']],()=>askOne(0));
+}
+function drawBoard(t){
+  const g=cx;const bg=g.createLinearGradient(0,0,0,H);bg.addColorStop(0,'#2a3550');bg.addColorStop(1,'#1d2433');g.fillStyle=bg;g.fillRect(0,0,W,H);
+  g.fillStyle='#f3e6c6';g.fillRect(24,40,912,446);g.fillStyle='#e3d2a8';g.fillRect(24,40,912,8);g.fillRect(24,478,912,8);
+  g.fillStyle='#8b5a2b';g.fillRect(14,34,16,458);g.fillRect(930,34,16,458);
+  g.strokeStyle='#c9b48a';g.lineWidth=10;g.lineJoin='round';g.beginPath();SP.forEach((s,i)=>{const[x,y]=cellXY(i);i?g.lineTo(x+64,y+30):g.moveTo(x+64,y+30);});g.stroke();
+  SP.forEach((s,i)=>{const[x,y]=cellXY(i);const past=i<S.pos;
+    g.globalAlpha=past?.55:1;g.fillStyle='rgba(0,0,0,.18)';g.fillRect(x+3,y+4,128,60);g.fillStyle=SPC[s.k];g.fillRect(x,y,128,60);
+    g.strokeStyle=i===S.pos?'#fff':'rgba(0,0,0,.25)';g.lineWidth=i===S.pos?4:2;g.strokeRect(x,y,128,60);
+    g.fillStyle='#2b2218';g.font='12px "Gowun Dodum",sans-serif';g.fillText(`${s.y}년 · ${s.a}세`,x+6,y+15);
+    g.font='17px Jua,sans-serif';g.fillText(s.l,x+6,y+38);g.font='11.5px "Gowun Dodum",sans-serif';g.fillStyle='rgba(43,34,24,.75)';g.fillText(SPN[s.k],x+6,y+54);
+    if(STOP[s.k]){g.fillStyle='rgba(255,255,255,.75)';g.beginPath();g.arc(x+116,y+12,7,0,7);g.fill();g.fillStyle='#c0392b';g.font='bold 11px sans-serif';g.fillText('!',x+114,y+16);}
+    if(s.card&&S.cards.includes(s.card)){g.fillStyle='#fff8';g.fillRect(x+96,y+38,26,18);g.fillStyle='#8b6b3f';g.font='11px Jua';g.fillText('카드',x+98,y+51);}
+    g.globalAlpha=1;});
+  const[x,y]=cellXY(S.pos);const hp=Math.min(1,(performance.now()-hopT)/280);const hop=Math.sin(hp*Math.PI)*16;
+  drawChar(g,x+58,y-6-hop,pchar(),'down',0,1.25);
+  const done=S.done[S.pos];if(done&&!rolling&&!locked()&&scene==='board'){g.fillStyle='rgba(255,255,255,'+(.5+.5*Math.sin(t*4))+')';g.font='14px Jua,sans-serif';g.fillText('▼ 주사위를 굴려요',x+16,y+80>520?y-30:y+80);}
+}
+
+/* ================= 2D 맵 ================= */
+let MAP=null;const PL={x:0,y:0,tx:0,ty:0,t:0,mv:false,dir:'up',step:0,path:[],pend:null};
+const DX={up:0,down:0,left:-1,right:1},DY={up:-1,down:1,left:0,right:0};
+const held={};
+function enterChapter(id){
+  const ch=CHAPTERS[id];
+  fade(()=>{
+    const m=buildMap(ch.map());MAP={id,ch,m,npcs:ch.npcs.map(n=>Object.assign({dir:'down'},n)),done:false,talked:{}};
+    PL.x=PL.tx=ch.start[0];PL.y=PL.ty=ch.start[1];PL.mv=false;PL.t=0;PL.dir='up';PL.path=[];PL.pend=null;
+    scene='map';BBAR.classList.add('hidden');if(COARSE)PAD.classList.remove('hidden');hud();
+    chapterTitle(`${ch.name} · ${ch.year}`,ch.place);
+    setTimeout(()=>talk(ch.intro()),1300);
+  });
+}
+function walkable(x,y){if(!MAP||x<0||y<0||x>=COLS||y>=ROWS)return false;const ch=MAP.m.g[y][x];if(BLOCK[ch])return false;if(MAP.m.block.has(x+','+y))return false;if(MAP.npcs.some(n=>n.x===x&&n.y===y))return false;return true;}
+function npcAt(x,y){return MAP.npcs.find(n=>n.x===x&&n.y===y);}
+function locked(){return fading||!DLG.classList.contains('hidden')||pOpen();}
+function bfs(sx,sy,goal){
+  const prev=new Map(),q=[[sx,sy]],key=(x,y)=>x+','+y;prev.set(key(sx,sy),null);
+  while(q.length){const[x,y]=q.shift();if(goal(x,y)){const path=[];let k=key(x,y);while(k&&k!==key(sx,sy)){const[a,b]=k.split(',').map(Number);path.unshift([a,b]);k=prev.get(k);}return path;}
+    for(const d of['up','down','left','right']){const nx=x+DX[d],ny=y+DY[d],k=key(nx,ny);if(!prev.has(k)&&walkable(nx,ny)){prev.set(k,key(x,y));q.push([nx,ny]);}}}
+  return null;
+}
+function interact(){
+  if(!MAP||locked()||PL.mv)return;const n=npcAt(PL.x+DX[PL.dir],PL.y+DY[PL.dir]);if(n)talkNpc(n);
+}
+function faceTo(n){if(n.x<PL.x)PL.dir='left';else if(n.x>PL.x)PL.dir='right';else if(n.y<PL.y)PL.dir='up';else PL.dir='down';
+  n.dir=PL.dir==='left'?'right':PL.dir==='right'?'left':PL.dir==='up'?'down':'up';}
+function talkNpc(n){
+  faceTo(n);
+  if(n.main&&!MAP.done){
+    const ch=MAP.ch;
+    talk(ch.pre(),()=>runMission(ch.mission,score=>{
+      if(MAP.id!=='E')S.miss[MAP.id]=score;hud();
+      talk(ch.post(),()=>{
+        MAP.done=true;hud();
+        const back=()=>{if(MAP.id==='E'){S.done[S.pos]=true;S.fin=true;save();showResult();return;}
+          talk([['','인생실록에 새 페이지가 채워졌다. 이제 인생 보드로 돌아가자.']],()=>{S.done[S.pos]=true;save();enterBoard(true);});};
+        if(ch.card)showCard(ch.card,back);else back();
+      });
+    }));
+  }else if(n.main&&MAP.done){talk([[n.id,'고맙구나. 네가 겪은 일을 잊지 말고 적어 두어라.']]);}
+  else talk(n.say);
+}
+function heldDir(){for(const d of['up','down','left','right'])if(held[d])return d;return null;}
+function updMap(dt){
+  if(!MAP)return;
+  if(PL.mv){PL.t+=dt*6.5;if(PL.t>=1){PL.x=PL.tx;PL.y=PL.ty;PL.mv=false;PL.t=0;PL.step++;}}
+  if(PL.mv||locked())return;
+  let d=heldDir(),target=null;
+  if(d)PL.path=[],PL.pend=null;
+  else if(PL.path.length){const[nx,ny]=PL.path[0];d=nx<PL.x?'left':nx>PL.x?'right':ny<PL.y?'up':'down';target=[nx,ny];}
+  if(d){PL.dir=d;const nx=PL.x+DX[d],ny=PL.y+DY[d];if(walkable(nx,ny)){PL.tx=nx;PL.ty=ny;PL.mv=true;if(target)PL.path.shift();}else PL.path=[];return;}
+  if(PL.pend){const n=PL.pend;PL.pend=null;if(Math.abs(n.x-PL.x)+Math.abs(n.y-PL.y)===1)talkNpc(n);}
+}
+function drawMap(t){
+  const g=cx;g.fillStyle='#000';g.fillRect(0,0,W,H);g.drawImage(MAP.m.layer,0,OY);
+  g.strokeStyle='rgba(255,255,255,.35)';g.lineWidth=1.5;
+  for(const[x,y]of MAP.m.water){const ph=(t*1.2+x*.7+y*.4)%2;if(ph<1.2){const px=x*T+6+((x*13+y*7)%14),py=OY+y*T+10+((x*5+y*11)%14);g.beginPath();g.arc(px,py,4,Math.PI*1.1,Math.PI*1.9);g.stroke();}}
+  const ents=MAP.npcs.map(n=>({y:n.y,f:()=>{drawChar(g,n.x*T,OY+n.y*T-4+(Math.sin(t*2+n.x)>.85?-1:0),CH[n.id].o,n.dir,0,1);
+    if(n.main&&!MAP.done){const by=OY+n.y*T-26+Math.sin(t*5)*3;g.fillStyle='#ffd76a';g.beginPath();g.arc(n.x*T+16,by,9,0,7);g.fill();g.strokeStyle='#4a3a28';g.lineWidth=2;g.stroke();g.fillStyle='#4a3a28';g.font='bold 14px sans-serif';g.textAlign='center';g.fillText('!',n.x*T+16,by+5);g.textAlign='left';}
+    g.font='11px "Gowun Dodum",sans-serif';const nm=CH[n.id].n;const w=g.measureText(nm).width+8;g.fillStyle='rgba(0,0,0,.45)';g.fillRect(n.x*T+16-w/2,OY+n.y*T+28,w,14);g.fillStyle='#fff';g.textAlign='center';g.fillText(nm,n.x*T+16,OY+n.y*T+39);g.textAlign='left';}}));
+  const px=(PL.x+(PL.tx-PL.x)*PL.t)*T,py=(PL.y+(PL.ty-PL.y)*PL.t)*T;
+  ents.push({y:PL.mv?Math.max(PL.y,PL.ty):PL.y,f:()=>drawChar(g,px,OY+py-4,pchar(),PL.dir,PL.mv?(PL.step+(PL.t>.5?1:0)):0,1)});
+  ents.sort((a,b)=>a.y-b.y).forEach(e=>e.f());
+  if(MAP.m.season==='winter'){g.fillStyle='rgba(255,255,255,.8)';for(let i=0;i<60;i++){const x=(i*97+t*20*(1+i%3))%W,y=(i*53+t*40*(1+i%2))%H;g.fillRect(x,y,2,2);}}
+  if(MAP.m.season==='autumn'){g.fillStyle='rgba(230,120,40,.7)';for(let i=0;i<18;i++){const x=(i*131+t*25)%W,y=(i*71+t*35)%H;g.fillRect(x,y,3,2);}}
+  if(MAP.m.season==='spring'){g.fillStyle='rgba(255,190,210,.8)';for(let i=0;i<16;i++){const x=(i*149+t*18)%W,y=(i*67+t*28)%H;g.fillRect(x,y,3,3);}}
+}
+function canvasTap(e){
+  if(scene!=='map'||locked())return;
+  const r=cv.getBoundingClientRect();const x=Math.floor((e.clientX-r.left)/r.width*W/T),y=Math.floor(((e.clientY-r.top)/r.height*H-OY)/T);
+  if(x<0||y<0||x>=COLS||y>=ROWS)return;
+  const n=npcAt(x,y);
+  if(n){if(Math.abs(n.x-PL.x)+Math.abs(n.y-PL.y)===1&&!PL.mv){talkNpc(n);return;}const p=bfs(PL.x,PL.y,(a,b)=>Math.abs(a-n.x)+Math.abs(b-n.y)===1);if(p){PL.path=p;PL.pend=n;}return;}
+  const p=bfs(PL.x,PL.y,(a,b)=>a===x&&b===y);if(p){PL.path=p;PL.pend=null;}
+}
+cv.addEventListener('pointerdown',canvasTap);
+
+/* ================= 타이틀 배경 ================= */
+function drawTitle(t){
+  const g=cx;const sky=g.createLinearGradient(0,0,0,H);sky.addColorStop(0,'#f7c98b');sky.addColorStop(.55,'#f3e2c0');sky.addColorStop(1,'#cfe0c0');g.fillStyle=sky;g.fillRect(0,0,W,H);
+  g.fillStyle='#e9764a';g.beginPath();g.arc(760,150,58,0,7);g.fill();
+  const hill=(col,base,amp,f,o)=>{g.fillStyle=col;g.beginPath();g.moveTo(0,H);for(let x=0;x<=W;x+=20)g.lineTo(x,base-Math.sin(x*f+o)*amp-Math.sin(x*f*2.3+o)*amp*.4);g.lineTo(W,H);g.fill();};
+  hill('#9fb89a',300,50,.006,1);hill('#7d9c78',350,40,.009,3);hill('#5e7f5a',410,30,.012,5);
+  roofCurve(g,90,330,260,70,'#3b3f48');g.fillStyle='#efe6d2';g.fillRect(110,400,220,80);g.fillStyle='#7a4a2a';for(let i=0;i<5;i++)g.fillRect(114+i*52,400,6,80);
+  for(let i=0;i<4;i++){const x=600+i*70,y=440+Math.sin(t+i)*2;g.fillStyle='#4e9a45';g.beginPath();g.arc(x,y,26,0,7);g.fill();}
+  g.fillStyle='rgba(255,190,210,.85)';for(let i=0;i<24;i++){const x=(i*149+t*22)%W,y=(i*67+t*30)%H;g.fillRect(x,y,4,3);}
+}
+
+/* ================= 결과 ================= */
+function ending(){
+  const s=S.st;
+  if(S.cards.length>=12&&S.tl===8)return['인생실록을 남긴 이야기꾼','『인생실록』의 모든 페이지를 채우고 역사의 흐름까지 정리했습니다. 당신의 기록은 손주에게, 그리고 먼 훗날의 우리에게 전해졌습니다.'];
+  if(S.path==='의병'&&s.용기>=s.지혜&&s.용기>=s.인정)return['홍의장군의 전령','곽재우의 의병과 함께 산과 강을 누비며 소식을 전했습니다. 백성 스스로 나라를 지킬 수 있다는 것을 몸으로 보여 준 삶이었습니다.'];
+  if(S.path==='수군'&&(s.용기+s.지혜)>=s.인정)return['바다를 지킨 격군','이순신 장군의 판옥선에서 노를 저으며 바다를 지켰습니다. 바다를 지킨 덕분에 많은 백성이 곡식과 목숨을 지킬 수 있었습니다.'];
+  if(S.path==='의원'&&s.인정>=s.용기&&s.인정>=s.지혜)return['백성을 살린 의원','전쟁터와 피란길에서 다친 사람을 돌보고, 허준을 도와 백성을 살리는 일에 평생을 바쳤습니다.'];
+  return['이웃과 함께 버틴 백성','두 번의 큰 전쟁 속에서도 이웃과 곡식을 나누며 끝까지 삶을 지켜 냈습니다. 나라를 지킨 것은 이름 없는 백성들이기도 했습니다.'];
+}
+function showResult(){
+  fade(()=>{scene='board';MAP=null;PAD.classList.add('hidden');BBAR.classList.add('hidden');hud();
+  const[en,et]=ending();const m=Object.values(S.miss).reduce((a,b)=>a+b,0),bonus=(S.st.용기+S.st.지혜+S.st.인정)*5,mx=Math.max(8,S.st.용기,S.st.지혜,S.st.인정);
+  openP(`<div style="text-align:center"><h2 style="font-size:32px">${S.name}의 인생실록</h2><p style="font-size:16px;color:#8b6b3f">1580년 동래 출생 · 1637년 57세</p>
+   <div class="card" style="text-align:center;margin:8px 0"><div class="yr">엔딩 칭호</div><h3>${en}</h3><p>${et}</p></div></div>
+   <div style="display:flex;gap:18px"><div style="flex:1"><table class="bk"><tr><td>장 미션 (${Object.keys(S.miss).length}/7)</td><td>${m}점</td></tr><tr><td>실록 퀴즈 (${S.qc}/${S.qt} 정답)</td><td>${S.qs}점</td></tr><tr><td>연표 완성 (${S.tl}/8)</td><td>${S.tl*10}점</td></tr><tr><td>능력치 보너스</td><td>${bonus}점</td></tr><tr><td><b>총점</b></td><td style="color:#d9613b;font-size:24px">${total()}점</td></tr></table></div>
+   <div style="flex:1" class="bars">${['용기','지혜','인정'].map(k=>`<div><span style="width:40px">${k}</span><span class="bar"><i style="width:${Math.min(100,S.st[k]/mx*100)}%"></i></span><b>${S.st[k]}</b></div>`).join('')}<div><span style="width:40px">곡식</span><b>${S.st.곡식}</b></div>
+   <p style="font-size:16px;margin-top:6px">실록 카드 <b>${S.cards.length}/12</b></p></div></div>
+   <div class="mini">${CARD_IDS.map(id=>`<span class="${S.cards.includes(id)?'got':''}">${CARDS[id].t}</span>`).join('')}</div>
+   <p style="text-align:center;font-size:15px;color:#8b6b3f">이 화면을 캡처해 제출하세요.</p>
+   <div class="row"><button class="btn sub" id="r1">실록 카드 다시 보기</button>${S.wrong.length?'<button class="btn sub" id="r2">틀린 사건 다시 보기</button>':''}<button class="btn" id="r3">처음부터</button></div>`);
+  on('#r1',()=>cardList(S.cards,'나의 실록 카드'));on('#r2',()=>cardList(S.wrong,'틀린 사건 다시 보기'));on('#r3',()=>{clearSave();S=newState();titleScreen();});
+  });
+}
+function cardList(ids,title){
+  openP(`<h2>${title}</h2>${ids.map(id=>`<div class="card" style="margin:8px 0"><div class="yr">${CARDS[id].y}</div><h3 style="font-size:22px">${CARDS[id].t}</h3><p style="font-size:17px">${CARDS[id].d}</p></div>`).join('')||'<p>아직 없어요.</p>'}<div class="row"><button class="btn" id="bk">결과로 돌아가기</button></div>`);
+  on('#bk',showResult);
+}
+
+/* ================= 입력 ================= */
+const KM={arrowup:'up',w:'up',arrowdown:'down',s:'down',arrowleft:'left',a:'left',arrowright:'right',d:'right'};
+addEventListener('keydown',e=>{
+  if(e.target&&e.target.tagName==='INPUT')return;
+  const k=e.key.toLowerCase();
+  if(KM[k]){held[KM[k]]=true;e.preventDefault();}
+  if(D.choice&&/^[1-4]$/.test(k)){pick(+k-1);e.preventDefault();return;}
+  if(k===' '||k==='enter'){e.preventDefault();if(adv())return;if(pOpen())return;if(scene==='map')interact();else if(scene==='board')rollDice();}
+});
+addEventListener('keyup',e=>{const k=e.key.toLowerCase();if(KM[k])held[KM[k]]=false;});
+addEventListener('blur',()=>{for(const k in held)held[k]=false;});
+PAD.querySelectorAll('.dp button').forEach(b=>{const d=b.dataset.d;b.addEventListener('pointerdown',e=>{e.preventDefault();held[d]=true;});['pointerup','pointerleave','pointercancel'].forEach(ev=>b.addEventListener(ev,()=>held[d]=false));});
+$('#padA').addEventListener('pointerdown',e=>{e.preventDefault();if(adv())return;interact();});
+$('#roll').addEventListener('click',rollDice);
+
+/* ================= 루프 ================= */
+function loop(ts){const dt=Math.min(.05,(ts-lastTS)/1000||0);lastTS=ts;if(COARSE)PAD.classList.toggle('hidden',!(scene==='map'&&MAP&&!locked()));try{if(scene==='map'&&MAP){updMap(dt);drawMap(ts/1000);}else if(scene==='board')drawBoard(ts/1000);else drawTitle(ts/1000);}catch(err){console.error(err);}requestAnimationFrame(loop);}
+titleScreen();requestAnimationFrame(loop);
+</script>
+</body>
+</html>
